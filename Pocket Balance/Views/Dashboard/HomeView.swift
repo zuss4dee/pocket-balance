@@ -23,6 +23,21 @@ extension Double {
         }
         return "£\(String(format: "%.2f", self))"
     }
+    
+    func formatAsShortCurrency() -> String {
+        let absValue = abs(self)
+        let sign = self < 0 ? "-" : ""
+        
+        if absValue >= 1_000_000 {
+            let millions = absValue / 1_000_000
+            return String(format: "%@£%.1fM", sign, millions)
+        } else if absValue >= 1_000 {
+            let thousands = absValue / 1_000
+            return String(format: "%@£%.1fK", sign, thousands)
+        } else {
+            return String(format: "%@£%.0f", sign, absValue)
+        }
+    }
 }
 
 // MARK: - Data Models
@@ -129,6 +144,47 @@ struct HomeView: View {
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
                     
+                    // Remaining Balance - Hero Card
+                    VStack(spacing: 8) {
+                        Text("Your Balance")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
+                            .tracking(1)
+                        
+                        Text(remainingBalance.formatAsShortCurrency())
+                            .font(.system(size: 42, weight: .bold, design: .rounded))
+                            .foregroundColor(remainingBalance >= 0 ? .green : .red)
+                        
+                        Text(remainingBalance >= 0 ? "Available to spend" : "Over budget")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(remainingBalance >= 0 ? .green.opacity(0.8) : .red.opacity(0.8))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 32)
+                    .padding(.horizontal, 20)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(remainingBalance >= 0 ? Color.green.opacity(0.08) : Color.red.opacity(0.08))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .stroke(remainingBalance >= 0 ? Color.green.opacity(0.2) : Color.red.opacity(0.2), lineWidth: 1)
+                    )
+                    .padding(.horizontal, 20)
+                    
+                    // Section Divider
+                    VStack(spacing: 6) {
+                        Divider()
+                            .padding(.horizontal, 20)
+                        
+                        Text("BREAKDOWN")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .tracking(1)
+                    }
+                    .padding(.vertical, 8)
+                    
                     // Dashboard Cards
                     VStack(spacing: 12) {
                         // Income Card
@@ -137,7 +193,7 @@ struct HomeView: View {
                         }) {
                             DashboardCardView(
                                 title: "Total Income",
-                                metric: totalIncome.formatAsCurrency(),
+                                metric: totalIncome.formatAsShortCurrency(),
                                 context: "Tap to add income",
                                 iconSystemName: "arrow.up.circle",
                                 iconColor: .green
@@ -155,7 +211,7 @@ struct HomeView: View {
                         }) {
                             DashboardCardView(
                                 title: "Expenses This Month",
-                                metric: totalExpenses.formatAsCurrency(),
+                                metric: totalExpenses.formatAsShortCurrency(),
                                 context: expenses.isEmpty ? "Tap to add expenses" : "\(expenses.count) expense\(expenses.count == 1 ? "" : "s") • Tap to view",
                                 iconSystemName: "arrow.down.circle",
                                 iconColor: .red
@@ -173,41 +229,13 @@ struct HomeView: View {
                         }) {
                             DashboardCardView(
                                 title: "Recurring Payments",
-                                metric: totalSubscriptions.formatAsCurrency(),
+                                metric: totalSubscriptions.formatAsShortCurrency(),
                                 context: subscriptions.isEmpty ? "Tap to add subscriptions" : "\(subscriptions.count) subscription\(subscriptions.count == 1 ? "" : "s") • Tap to view",
                                 iconSystemName: "repeat.circle",
                                 iconColor: .purple
                             )
                         }
                         .buttonStyle(.plain)
-                        
-                        // Balance Card
-                        HStack(spacing: 20) {
-                            VStack(alignment: .leading, spacing: 8) {
-                                Text("Remaining Balance")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundStyle(.secondary)
-                                    .textCase(.uppercase)
-                                
-                                Text(remainingBalance.formatAsCurrency())
-                                    .font(.system(size: 32, weight: .bold, design: .rounded))
-                                    .foregroundColor(remainingBalance >= 0 ? .blue : .red)
-                                
-                                Text(remainingBalance >= 0 ? "left to spend" : "over budget")
-                                    .font(.system(size: 13, weight: .regular))
-                                    .foregroundStyle(.secondary)
-                            }
-                            
-                            Spacer(minLength: 16)
-                            
-                            Text(remainingBalance >= 0 ? "🦉" : "⚠️")
-                                .font(.system(size: 36))
-                        }
-                        .padding(20)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(.background)
-                        )
                     }
                     .padding(.horizontal, 20)
                     .padding(.bottom, 40)
