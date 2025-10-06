@@ -14,7 +14,7 @@ struct Pocket_BalanceApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                OnboardingCoordinatorView()
+                ContentView() // Changed to ContentView to show the main app with tab bar
                 
                 if showLaunchScreen {
                     LaunchScreenView()
