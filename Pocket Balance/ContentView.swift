@@ -10,10 +10,14 @@ import Combine
 
 // Shared AppData to pass between tabs
 class AppData: ObservableObject {
-    @Published var totalIncome: Double = 0.0
+    @Published var incomes: [IncomeItem] = []
     @Published var expenses: [ExpenseItem] = []
     @Published var subscriptions: [SubscriptionItem] = []
     @Published var budgetCategories: [BudgetCategory] = []
+    
+    var totalIncome: Double {
+        incomes.reduce(0) { $0 + $1.amount }
+    }
     
     var totalExpenses: Double {
         expenses.reduce(0) { $0 + $1.amount }
@@ -82,7 +86,7 @@ struct HomeViewWrapper: View {
     
     var body: some View {
         HomeView(
-            totalIncome: $appData.totalIncome,
+            incomes: $appData.incomes,
             expenses: $appData.expenses,
             subscriptions: $appData.subscriptions
         )

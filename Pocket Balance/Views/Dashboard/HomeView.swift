@@ -42,6 +42,20 @@ extension Double {
 
 // MARK: - Data Models
 
+struct IncomeItem: Identifiable, Codable {
+    let id: UUID
+    var amount: Double
+    var source: String
+    var date: Date
+    
+    init(id: UUID = UUID(), amount: Double, source: String, date: Date = Date()) {
+        self.id = id
+        self.amount = amount
+        self.source = source
+        self.date = date
+    }
+}
+
 struct ExpenseItem: Identifiable, Codable {
     let id: UUID
     var amount: Double
@@ -101,15 +115,20 @@ struct BudgetCategory: Identifiable, Codable {
 }
 
 struct HomeView: View {
-    @Binding var totalIncome: Double
+    @Binding var incomes: [IncomeItem]
     @Binding var expenses: [ExpenseItem]
     @Binding var subscriptions: [SubscriptionItem]
     
     @State private var showAddIncome = false
     @State private var showAddExpense = false
     @State private var showAddSubscription = false
+    @State private var showIncomesList = false
     @State private var showExpensesList = false
     @State private var showSubscriptionsList = false
+    
+    var totalIncome: Double {
+        incomes.reduce(0) { $0 + $1.amount }
+    }
     
     var totalExpenses: Double {
         expenses.reduce(0) { $0 + $1.amount }
@@ -189,12 +208,16 @@ struct HomeView: View {
                     VStack(spacing: 12) {
                         // Income Card
                         Button(action: {
-                            showAddIncome = true
+                            if incomes.isEmpty {
+                                showAddIncome = true
+                            } else {
+                                showIncomesList = true
+                            }
                         }) {
                             DashboardCardView(
                                 title: "Total Income",
                                 metric: totalIncome.formatAsShortCurrency(),
-                                context: "Tap to add income",
+                                context: incomes.isEmpty ? "Tap to add income" : "\(incomes.count) income source\(incomes.count == 1 ? "" : "s") • Tap to view",
                                 iconSystemName: "arrow.up.circle",
                                 iconColor: .green
                             )
@@ -256,13 +279,16 @@ struct HomeView: View {
                 }
             }
             .sheet(isPresented: $showAddIncome) {
-                AddIncomeSheet(totalIncome: $totalIncome)
+                AddIncomeSheet(incomes: $incomes)
             }
             .sheet(isPresented: $showAddExpense) {
                 AddExpenseSheet(expenses: $expenses)
             }
             .sheet(isPresented: $showAddSubscription) {
                 AddSubscriptionSheet(subscriptions: $subscriptions)
+            }
+            .sheet(isPresented: $showIncomesList) {
+                IncomesListView(incomes: $incomes)
             }
             .sheet(isPresented: $showExpensesList) {
                 ExpensesListView(expenses: $expenses)
@@ -271,6 +297,145 @@ struct HomeView: View {
                 SubscriptionsListView(subscriptions: $subscriptions)
             }
         }
+    }
+}
+
+// MARK: - Incomes List View
+
+struct IncomesListView: View {
+    @Environment(\.dismiss) var dismiss
+    @Binding var incomes: [IncomeItem]
+    @State private var showAddIncome = false
+    @State private var editingIncome: IncomeItem?
+    
+    var totalIncome: Double {
+        incomes.reduce(0) { $0 + $1.amount }
+    }
+    
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                if incomes.isEmpty {
+                    VStack(spacing: 20) {
+                        Image(systemName: "tray")
+                            .font(.system(size: 60))
+                            .foregroundColor(.secondary)
+                        Text("No income yet")
+                            .font(.system(size: 20, weight: .semibold))
+                        Text("Tap + to add your first income")
+                            .font(.system(size: 15))
+                            .foregroundColor(.secondary)
+                    }
+                } else {
+                    List {
+                        ForEach(incomes) { income in
+                            IncomeRowView(
+                                income: income,
+                                onEdit: {
+                                    editingIncome = income
+                                },
+                                onDelete: {
+                                    withAnimation {
+                                        incomes.removeAll { $0.id == income.id }
+                                    }
+                                }
+                            )
+                            .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
+                            .listRowSeparator(.hidden)
+                            .listRowBackground(Color.clear)
+                        }
+                    }
+                    .listStyle(.plain)
+                    .scrollContentBackground(.hidden)
+                }
+            }
+            .background(Color(UIColor.systemGroupedBackground))
+            .navigationTitle("Income • \(totalIncome.formatAsCurrency())")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                }
+                
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: {
+                        showAddIncome = true
+                    }) {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 22))
+                            .foregroundStyle(.green)
+                    }
+                }
+            }
+            .sheet(isPresented: $showAddIncome) {
+                AddIncomeSheet(incomes: $incomes)
+            }
+            .sheet(item: $editingIncome) { income in
+                EditIncomeSheet(incomes: $incomes, income: income)
+            }
+        }
+    }
+}
+
+// MARK: - Income Row View
+
+struct IncomeRowView: View {
+    let income: IncomeItem
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            // Icon
+            Circle()
+                .fill(Color.green.opacity(0.1))
+                .frame(width: 44, height: 44)
+                .overlay(
+                    Image(systemName: "arrow.up.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(.green)
+                )
+            
+            // Content
+            VStack(alignment: .leading, spacing: 4) {
+                Text(income.source)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.primary)
+                
+                Text(income.date, style: .date)
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(.secondary)
+            }
+            
+            Spacer()
+            
+            // Amount
+            Text(income.amount.formatAsCurrency())
+                .font(.system(size: 17, weight: .bold, design: .rounded))
+                .foregroundColor(.green)
+            
+            // Menu
+            Menu {
+                Button(action: onEdit) {
+                    Label("Edit", systemImage: "pencil")
+                }
+                
+                Button(role: .destructive, action: onDelete) {
+                    Label("Delete", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 20))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(.background)
+        )
     }
 }
 
@@ -526,9 +691,9 @@ struct SubscriptionRowView: View {
 
 struct AddIncomeSheet: View {
     @Environment(\.dismiss) var dismiss
-    @Binding var totalIncome: Double
+    @Binding var incomes: [IncomeItem]
     @State private var amount: String = ""
-    @State private var description: String = ""
+    @State private var source: String = ""
     @State private var errorMessage: String = ""
     
     var isValidAmount: Bool {
@@ -560,11 +725,11 @@ struct AddIncomeSheet: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Description (Optional)")
+                    Text("Source")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.secondary)
                     
-                    TextField("e.g., Salary, Freelance", text: $description)
+                    TextField("e.g., Salary, Freelance, Bonus", text: $source)
                         .padding(16)
                         .background(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -639,7 +804,133 @@ struct AddIncomeSheet: View {
         }
         
         // All validations passed
-        totalIncome += value
+        let income = IncomeItem(amount: value, source: source.isEmpty ? "Income" : source)
+        incomes.append(income)
+        dismiss()
+    }
+}
+
+// MARK: - Edit Income Sheet
+
+struct EditIncomeSheet: View {
+    @Environment(\.dismiss) var dismiss
+    @Binding var incomes: [IncomeItem]
+    let income: IncomeItem
+    @State private var amount: String = ""
+    @State private var source: String = ""
+    @State private var errorMessage: String = ""
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 32) {
+                Spacer()
+                
+                VStack(spacing: 16) {
+                    Text("Edit Income")
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                    
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("£")
+                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                            .foregroundStyle(.green)
+                        
+                        TextField("0.00", text: $amount)
+                            .font(.system(size: 56, weight: .bold, design: .rounded))
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.leading)
+                            .foregroundStyle(.green)
+                    }
+                    .padding(.horizontal, 20)
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Source")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(.secondary)
+                    
+                    TextField("e.g., Salary, Freelance, Bonus", text: $source)
+                        .padding(16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color(UIColor.secondarySystemGroupedBackground))
+                        )
+                }
+                .padding(.horizontal, 20)
+                
+                // Error Message
+                if !errorMessage.isEmpty {
+                    HStack(spacing: 8) {
+                        Image(systemName: "exclamationmark.circle.fill")
+                            .foregroundColor(.red)
+                        Text(errorMessage)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.red)
+                    }
+                    .padding(.horizontal, 20)
+                }
+                
+                Spacer()
+                
+                Button(action: {
+                    validateAndSaveChanges()
+                }) {
+                    Text("Save Changes")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(amount.isEmpty ? Color.gray.opacity(0.5) : .green)
+                        )
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
+                .disabled(amount.isEmpty)
+                .opacity(amount.isEmpty ? 0.5 : 1.0)
+            }
+            .background(Color(UIColor.systemGroupedBackground))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear {
+                amount = String(format: "%.2f", income.amount)
+                source = income.source
+            }
+        }
+    }
+    
+    private func validateAndSaveChanges() {
+        errorMessage = ""
+        
+        // Check if amount is empty
+        if amount.isEmpty {
+            errorMessage = "Please enter an amount"
+            return
+        }
+        
+        // Check if amount is a valid number
+        guard let value = Double(amount) else {
+            errorMessage = "Please enter numbers only (e.g., 2500 or 2500.50)"
+            return
+        }
+        
+        // Check if amount is positive
+        if value <= 0 {
+            errorMessage = "Amount must be greater than zero"
+            return
+        }
+        
+        // All validations passed
+        if let index = incomes.firstIndex(where: { $0.id == income.id }) {
+            incomes[index].amount = value
+            incomes[index].source = source.isEmpty ? "Income" : source
+        }
         dismiss()
     }
 }
@@ -1817,7 +2108,7 @@ struct EditBudgetCategorySheet: View {
 
 #Preview {
     HomeView(
-        totalIncome: .constant(2500.0),
+        incomes: .constant([]),
         expenses: .constant([]),
         subscriptions: .constant([])
     )
