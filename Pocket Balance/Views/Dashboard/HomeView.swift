@@ -470,8 +470,17 @@ struct ExpensesListView: View {
                                     editingExpense = expense
                                 },
                                 onDelete: {
-                                    withAnimation {
-                                        expenses.removeAll { $0.id == expense.id }
+                                    Task {
+                                        do {
+                                            try await SupabaseService.shared.deleteExpense(id: expense.id)
+                                            await MainActor.run {
+                                                withAnimation {
+                                                    expenses.removeAll { $0.id == expense.id }
+                                                }
+                                            }
+                                        } catch {
+                                            print("Failed to delete expense: \(error.localizedDescription)")
+                                        }
                                     }
                                 }
                             )
@@ -594,8 +603,17 @@ struct SubscriptionsListView: View {
                                     editingSubscription = subscription
                                 },
                                 onDelete: {
-                                    withAnimation {
-                                        subscriptions.removeAll { $0.id == subscription.id }
+                                    Task {
+                                        do {
+                                            try await SupabaseService.shared.deleteSubscription(id: subscription.id)
+                                            await MainActor.run {
+                                                withAnimation {
+                                                    subscriptions.removeAll { $0.id == subscription.id }
+                                                }
+                                            }
+                                        } catch {
+                                            print("Failed to delete subscription: \(error.localizedDescription)")
+                                        }
                                     }
                                 }
                             )
@@ -803,10 +821,23 @@ struct AddIncomeSheet: View {
             return
         }
         
-        // All validations passed
-        let income = IncomeItem(amount: value, source: source.isEmpty ? "Income" : source)
-        incomes.append(income)
-        dismiss()
+        // All validations passed - Save to Supabase
+        Task {
+            do {
+                let newIncome = try await SupabaseService.shared.createIncome(
+                    source: source.isEmpty ? "Income" : source,
+                    amount: value
+                )
+                await MainActor.run {
+                    incomes.append(newIncome)
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to save: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 }
 
@@ -926,12 +957,27 @@ struct EditIncomeSheet: View {
             return
         }
         
-        // All validations passed
-        if let index = incomes.firstIndex(where: { $0.id == income.id }) {
-            incomes[index].amount = value
-            incomes[index].source = source.isEmpty ? "Income" : source
+        // All validations passed - Update in Supabase
+        Task {
+            do {
+                try await SupabaseService.shared.updateIncome(
+                    id: income.id,
+                    source: source.isEmpty ? "Income" : source,
+                    amount: value
+                )
+                await MainActor.run {
+                    if let index = incomes.firstIndex(where: { $0.id == income.id }) {
+                        incomes[index].amount = value
+                        incomes[index].source = source.isEmpty ? "Income" : source
+                    }
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to update: \(error.localizedDescription)"
+                }
+            }
         }
-        dismiss()
     }
 }
 
@@ -1046,10 +1092,23 @@ struct AddExpenseSheet: View {
             return
         }
         
-        // All validations passed
-        let expense = ExpenseItem(amount: value, description: description)
-        expenses.append(expense)
-        dismiss()
+        // All validations passed - Save to Supabase
+        Task {
+            do {
+                let newExpense = try await SupabaseService.shared.createExpense(
+                    description: description.isEmpty ? "Expense" : description,
+                    amount: value
+                )
+                await MainActor.run {
+                    expenses.append(newExpense)
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to save: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 }
 
@@ -1490,8 +1549,17 @@ struct BudgetingView: View {
                                                 editingCategory = category
                                             },
                                             onDelete: {
-                                                withAnimation {
-                                                    budgetCategories.removeAll { $0.id == category.id }
+                                                Task {
+                                                    do {
+                                                        try await SupabaseService.shared.deleteBudgetCategory(id: category.id)
+                                                        await MainActor.run {
+                                                            withAnimation {
+                                                                budgetCategories.removeAll { $0.id == category.id }
+                                                            }
+                                                        }
+                                                    } catch {
+                                                        print("Failed to delete budget category: \(error.localizedDescription)")
+                                                    }
                                                 }
                                             }
                                         )
@@ -1831,10 +1899,25 @@ struct AddBudgetCategorySheet: View {
             return
         }
         
-        // All validations passed
-        let category = BudgetCategory(name: categoryName, amount: value, icon: selectedIcon, color: selectedColor)
-        budgetCategories.append(category)
-        dismiss()
+        // All validations passed - Save to Supabase
+        Task {
+            do {
+                let newCategory = try await SupabaseService.shared.createBudgetCategory(
+                    name: categoryName,
+                    amount: value,
+                    icon: selectedIcon,
+                    color: selectedColor
+                )
+                await MainActor.run {
+                    budgetCategories.append(newCategory)
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to save: \(error.localizedDescription)"
+                }
+            }
+        }
     }
     
     private func colorFromString(_ colorName: String) -> Color {
@@ -2082,13 +2165,30 @@ struct EditBudgetCategorySheet: View {
             return
         }
         
-        // All validations passed
-        guard let index = budgetCategories.firstIndex(where: { $0.id == category.id }) else { return }
-        budgetCategories[index].name = categoryName
-        budgetCategories[index].amount = value
-        budgetCategories[index].icon = selectedIcon
-        budgetCategories[index].color = selectedColor
-        dismiss()
+        // All validations passed - Update in Supabase
+        Task {
+            do {
+                try await SupabaseService.shared.updateBudgetCategory(
+                    id: category.id,
+                    name: categoryName,
+                    amount: value,
+                    icon: selectedIcon,
+                    color: selectedColor
+                )
+                await MainActor.run {
+                    guard let index = budgetCategories.firstIndex(where: { $0.id == category.id }) else { return }
+                    budgetCategories[index].name = categoryName
+                    budgetCategories[index].amount = value
+                    budgetCategories[index].icon = selectedIcon
+                    budgetCategories[index].color = selectedColor
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to update: \(error.localizedDescription)"
+                }
+            }
+        }
     }
     
     private func colorFromString(_ colorName: String) -> Color {

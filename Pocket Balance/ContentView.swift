@@ -1104,8 +1104,17 @@ struct BudgetingViewStandalone: View {
                                                 editingCategory = category
                                             },
                                             onDelete: {
-                                                withAnimation {
-                                                    budgetCategories.removeAll { $0.id == category.id }
+                                                Task {
+                                                    do {
+                                                        try await SupabaseService.shared.deleteBudgetCategory(id: category.id)
+                                                        await MainActor.run {
+                                                            withAnimation {
+                                                                budgetCategories.removeAll { $0.id == category.id }
+                                                            }
+                                                        }
+                                                    } catch {
+                                                        print("Failed to delete budget category: \(error.localizedDescription)")
+                                                    }
                                                 }
                                             }
                                         )
