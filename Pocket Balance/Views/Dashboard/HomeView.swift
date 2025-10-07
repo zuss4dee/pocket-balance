@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Supabase
 
 // MARK: - Currency Formatter Extension
 
@@ -125,6 +126,8 @@ struct HomeView: View {
     @State private var showIncomesList = false
     @State private var showExpensesList = false
     @State private var showSubscriptionsList = false
+    @State private var userFullName: String = "User"
+    @State private var isLoadingUserName = true
     
     var totalIncome: Double {
         incomes.reduce(0) { $0 + $1.amount }
@@ -149,13 +152,18 @@ struct HomeView: View {
                     // Greeting Header
                     HStack(alignment: .center, spacing: 16) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Good evening,")
+                            Text(greeting())
                                 .font(.system(size: 15, weight: .medium))
                                 .foregroundStyle(.secondary)
                             
-                            Text("Dami")
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
-                                .foregroundStyle(.primary)
+                            if isLoadingUserName {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                            } else {
+                                Text(userFullName)
+                                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                                    .foregroundStyle(.primary)
+                            }
                         }
                         
                         Spacer()
@@ -296,7 +304,72 @@ struct HomeView: View {
             .sheet(isPresented: $showSubscriptionsList) {
                 SubscriptionsListView(subscriptions: $subscriptions)
             }
+            .task {
+                await loadUserName()
+            }
         }
+    }
+    
+    // MARK: - Helper Functions
+    
+    private func greeting() -> String {
+        let hour = Calendar.current.component(.hour, from: Date())
+        
+        switch hour {
+        case 0..<12:
+            return "Good morning,"
+        case 12..<17:
+            return "Good afternoon,"
+        case 17..<22:
+            return "Good evening,"
+        default:
+            return "Good night,"
+        }
+    }
+    
+    @MainActor
+    private func loadUserName() async {
+        isLoadingUserName = true
+        
+        do {
+            let user = try await SupabaseService.shared.client.auth.session.user
+            
+            // Get full name from user metadata
+            if let fullNameJSON = user.userMetadata["full_name"] {
+                switch fullNameJSON {
+                case .string(let fullName):
+                    userFullName = fullName
+                default:
+                    do {
+                        let data = try JSONEncoder().encode(fullNameJSON)
+                        let fullName = try JSONDecoder().decode(String.self, from: data)
+                        userFullName = fullName
+                    } catch {
+                        print("⚠️ Could not decode full_name from metadata")
+                        userFullName = "User"
+                    }
+                }
+            } else {
+                // If no name in metadata, try to get first name from phone or email
+                if let phone = user.phone {
+                    userFullName = "User"
+                } else if let email = user.email {
+                    // Extract first part of email as fallback
+                    let emailParts = email.components(separatedBy: "@")
+                    userFullName = emailParts.first?.capitalized ?? "User"
+                } else {
+                    userFullName = "User"
+                }
+            }
+            
+            print("✅ Loaded user name for HomeView: \(userFullName)")
+            
+        } catch {
+            print("❌ Error loading user name: \(error.localizedDescription)")
+            userFullName = "User"
+        }
+        
+        isLoadingUserName = false
     }
 }
 
