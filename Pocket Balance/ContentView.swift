@@ -146,6 +146,27 @@ struct BudgetViewWrapper: View {
 struct ProfileView: View {
     @State private var showingSignOutAlert = false
     @State private var isSigningOut = false
+    @State private var userFullName: String = ""
+    @State private var userPhone: String = ""
+    @State private var userEmail: String = ""
+    @State private var isLoadingProfile = true
+    
+    private var userInitial: String {
+        if let firstChar = userFullName.first {
+            return String(firstChar).uppercased()
+        }
+        return "U"
+    }
+    
+    private var displayContact: String {
+        // Show email if available, otherwise show phone
+        if !userEmail.isEmpty {
+            return userEmail
+        } else if !userPhone.isEmpty {
+            return userPhone
+        }
+        return ""
+    }
     
     var body: some View {
         NavigationStack {
@@ -163,17 +184,31 @@ struct ProfileView: View {
                             )
                             .frame(width: 80, height: 80)
                             .overlay(
-                                Text("D")
-                                    .font(.system(size: 36, weight: .bold))
-                                    .foregroundColor(.white)
+                                Group {
+                                    if isLoadingProfile {
+                                        ProgressView()
+                                            .tint(.white)
+                                    } else {
+                                        Text(userInitial)
+                                            .font(.system(size: 36, weight: .bold))
+                                            .foregroundColor(.white)
+                                    }
+                                }
                             )
                         
-                        Text("Dami")
-                            .font(.system(size: 24, weight: .bold, design: .rounded))
-                        
-                        Text("dami@example.com")
-                            .font(.system(size: 15, weight: .regular))
-                            .foregroundColor(.secondary)
+                        if isLoadingProfile {
+                            ProgressView()
+                                .padding(.top, 8)
+                        } else {
+                            Text(userFullName.isEmpty ? "User" : userFullName)
+                                .font(.system(size: 24, weight: .bold, design: .rounded))
+                            
+                            if !displayContact.isEmpty {
+                                Text(displayContact)
+                                    .font(.system(size: 15, weight: .regular))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
                     }
                     .padding(.top, 20)
                     
@@ -230,7 +265,62 @@ struct ProfileView: View {
             } message: {
                 Text("Are you sure you want to sign out?")
             }
+            .task {
+                await loadUserProfile()
+            }
         }
+    }
+    
+    @MainActor
+    private func loadUserProfile() async {
+        isLoadingProfile = true
+        
+        do {
+            // Get current user from Supabase
+            let user = try await SupabaseService.shared.client.auth.session.user
+            
+            // Get phone number (if available)
+            if let phone = user.phone {
+                userPhone = phone
+            }
+            
+            // Get email (if available)
+            if let email = user.email {
+                userEmail = email
+            }
+            
+            // Get full name from user metadata
+            // userMetadata is [String: AnyJSON]
+            if let fullNameJSON = user.userMetadata["full_name"] {
+                // Try to extract string from AnyJSON
+                switch fullNameJSON {
+                case .string(let fullName):
+                    userFullName = fullName
+                default:
+                    // Try encoding/decoding approach
+                    do {
+                        let data = try JSONEncoder().encode(fullNameJSON)
+                        let fullName = try JSONDecoder().decode(String.self, from: data)
+                        userFullName = fullName
+                    } catch {
+                        print("⚠️ Could not decode full_name from metadata")
+                    }
+                }
+            }
+            
+            print("✅ Loaded user profile:")
+            print("   👤 Name: \(userFullName)")
+            print("   📧 Email: \(userEmail)")
+            print("   📱 Phone: \(userPhone)")
+            print("   🔍 Metadata: \(user.userMetadata)")
+            
+        } catch {
+            print("❌ Error loading user profile: \(error.localizedDescription)")
+            // Set defaults if error
+            userFullName = "User"
+        }
+        
+        isLoadingProfile = false
     }
     
     private func signOut() {
