@@ -9,6 +9,7 @@ import SwiftUI
 
 struct OnboardingCoordinatorView: View {
     @StateObject private var authState = AuthenticationState()
+    var onAuthenticationComplete: (() -> Void)? = nil
     
     var body: some View {
         Group {
@@ -29,9 +30,11 @@ struct OnboardingCoordinatorView: View {
                 CreateProfileView()
                     .transition(.slide)
             case .completed:
-                // This will be replaced with the main app view later
-                ContentView()
-                    .transition(.opacity)
+                // Authentication complete - notify parent view
+                Color.clear
+                    .onAppear {
+                        onAuthenticationComplete?()
+                    }
             }
         }
         .environmentObject(authState)

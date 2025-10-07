@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Combine
+import Supabase
 
 // Shared AppData to pass between tabs
 class AppData: ObservableObject {
@@ -143,6 +144,9 @@ struct BudgetViewWrapper: View {
 // MARK: - Tab Views
 
 struct ProfileView: View {
+    @State private var showingSignOutAlert = false
+    @State private var isSigningOut = false
+    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -191,18 +195,26 @@ struct ProfileView: View {
                     
                     // Sign Out Button
                     Button(action: {
-                        print("Sign out tapped")
+                        showingSignOutAlert = true
                     }) {
-                        Text("Sign Out")
-                            .font(.system(size: 16, weight: .semibold))
-                            .foregroundColor(.red)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(Color(UIColor.secondarySystemGroupedBackground))
-                            )
+                        HStack {
+                            if isSigningOut {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                    .padding(.trailing, 8)
+                            }
+                            Text(isSigningOut ? "Signing Out..." : "Sign Out")
+                                .font(.system(size: 16, weight: .semibold))
+                                .foregroundColor(.red)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color(UIColor.secondarySystemGroupedBackground))
+                        )
                     }
+                    .disabled(isSigningOut)
                     .padding(.horizontal, 20)
                 }
                 .padding(.bottom, 40)
@@ -210,6 +222,31 @@ struct ProfileView: View {
             .background(Color(UIColor.systemGroupedBackground))
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
+            .alert("Sign Out", isPresented: $showingSignOutAlert) {
+                Button("Cancel", role: .cancel) { }
+                Button("Sign Out", role: .destructive) {
+                    signOut()
+                }
+            } message: {
+                Text("Are you sure you want to sign out?")
+            }
+        }
+    }
+    
+    private func signOut() {
+        isSigningOut = true
+        
+        Task {
+            do {
+                try await SupabaseService.shared.client.auth.signOut()
+                print("✅ Successfully signed out")
+                // The auth listener in AppRootView will automatically handle the navigation
+            } catch {
+                print("❌ Error signing out: \(error.localizedDescription)")
+                await MainActor.run {
+                    isSigningOut = false
+                }
+            }
         }
     }
 }
