@@ -189,6 +189,89 @@ class AuthenticationState: ObservableObject {
         }
     }
     
+    // MARK: - Email Authentication
+    
+    @MainActor
+    func signInWithEmail(email: String, password: String) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            print("📧 Signing in with email: \(email)")
+            try await supabase.auth.signIn(email: email, password: password)
+            isLoading = false
+            isAuthenticated = true
+            currentStep = .completed
+            print("✅ Email sign-in successful")
+        } catch {
+            isLoading = false
+            errorMessage = "Invalid email or password. Please try again."
+            print("❌ Error signing in with email: \(error.localizedDescription)")
+        }
+    }
+    
+    @MainActor
+    func signUpWithEmail(email: String, password: String) async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            print("📧 Signing up with email: \(email)")
+            try await supabase.auth.signUp(email: email, password: password)
+            isLoading = false
+            
+            // Move to profile creation
+            currentStep = .createProfile
+            print("✅ Email sign-up successful")
+        } catch {
+            isLoading = false
+            errorMessage = "Failed to create account. Please try again."
+            print("❌ Error signing up with email: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Apple Sign-In
+    
+    @MainActor
+    func signInWithApple(token: Data?, fullName: PersonNameComponents?) async {
+        isLoading = true
+        errorMessage = nil
+        
+        guard let token = token,
+              let tokenString = String(data: token, encoding: .utf8) else {
+            errorMessage = "Failed to get Apple Sign-In token"
+            isLoading = false
+            return
+        }
+        
+        do {
+            print("🍎 Signing in with Apple")
+            try await supabase.auth.signInWithIdToken(credentials: .init(provider: .apple, idToken: tokenString))
+            
+            // If we have the full name, save it
+            if let fullName = fullName {
+                let name = [fullName.givenName, fullName.familyName]
+                    .compactMap { $0 }
+                    .joined(separator: " ")
+                
+                if !name.isEmpty {
+                    self.fullName = name
+                    let attributes = UserAttributes(data: ["full_name": .string(name)])
+                    try await supabase.auth.update(user: attributes)
+                }
+            }
+            
+            isLoading = false
+            isAuthenticated = true
+            currentStep = .completed
+            print("✅ Apple Sign-In successful")
+        } catch {
+            isLoading = false
+            errorMessage = "Apple Sign-In failed. Please try again."
+            print("❌ Error with Apple Sign-In: \(error.localizedDescription)")
+        }
+    }
+    
     // MARK: - Sign Out
     
     @MainActor

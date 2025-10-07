@@ -34,14 +34,10 @@ struct AppRootView: View {
                 ContentView()
                     .transition(.opacity)
             } else {
-                // User is NOT logged in → Show onboarding
-                OnboardingCoordinatorView(onAuthenticationComplete: {
-                    // When authentication completes, refresh the auth state
-                    Task {
-                        await recheckAuthentication()
-                    }
-                })
-                .transition(.opacity)
+                // User is NOT logged in → Show login screen
+                LoginView()
+                    .transition(.opacity)
+                    .environmentObject(AuthenticationState())
             }
         }
         .animation(.easeInOut(duration: 0.3), value: isAuthenticated)
