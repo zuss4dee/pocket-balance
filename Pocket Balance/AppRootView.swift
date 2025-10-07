@@ -89,7 +89,7 @@ struct AppRootView: View {
     private func setupAuthListener() {
         // Listen for authentication state changes from Supabase
         Task {
-            for await state in await SupabaseService.shared.client.auth.authStateChanges {
+            for await state in SupabaseService.shared.client.auth.authStateChanges {
                 await MainActor.run {
                     switch state.event {
                     case .signedIn:

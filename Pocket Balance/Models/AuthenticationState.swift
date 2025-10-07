@@ -27,8 +27,8 @@ class AuthenticationState: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
-    private let supabaseURL = URL(string: "YOUR_SUPABASE_URL")!
-    private let supabaseKey = "YOUR_SUPABASE_ANON_KEY"
+    private let supabaseURL = URL(string: "https://dzxagbbkdzuqmcevqgwh.supabase.co")!
+    private let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eGFnYmJrZHp1cW1jZXZxZ3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MTM1MjcsImV4cCI6MjA3NTM4OTUyN30.X9lPaChueB7xSTreWiDS9IuuJIUwpagVt7AW1VWkRkg"
     private lazy var supabase = SupabaseClient(supabaseURL: supabaseURL, supabaseKey: supabaseKey)
     
     func moveToNextStep() {
@@ -102,15 +102,42 @@ class AuthenticationState: ObservableObject {
         isLoading = true
         errorMessage = nil
         
+        // Validate phone number format
+        guard !phoneNumber.isEmpty else {
+            isLoading = false
+            errorMessage = "Please enter a phone number."
+            return
+        }
+        
+        guard phoneNumber.hasPrefix("+") else {
+            isLoading = false
+            errorMessage = "Phone number must start with country code (e.g., +44)"
+            return
+        }
+        
         do {
+            print("📱 Sending OTP to: \(phoneNumber)")
             try await supabase.auth.signInWithOTP(phone: phoneNumber)
             isLoading = false
             moveToNextStep()
             print("✅ OTP sent successfully to \(phoneNumber)")
-        } catch {
+        } catch let error as NSError {
             isLoading = false
-            errorMessage = "Failed to send OTP. Please check your phone number."
-            print("❌ Error sending OTP: \(error.localizedDescription)")
+            
+            // Provide more specific error messages
+            if error.localizedDescription.contains("Phone provider") {
+                errorMessage = "SMS service not configured. Please contact support."
+            } else if error.localizedDescription.contains("Invalid") {
+                errorMessage = "Invalid phone number format. Use: +[country code][number]"
+            } else if error.localizedDescription.contains("rate limit") {
+                errorMessage = "Too many attempts. Please try again later."
+            } else {
+                errorMessage = "Failed to send OTP: \(error.localizedDescription)"
+            }
+            
+            print("❌ Error sending OTP: \(error)")
+            print("❌ Error domain: \(error.domain)")
+            print("❌ Error code: \(error.code)")
         }
     }
     
@@ -119,7 +146,21 @@ class AuthenticationState: ObservableObject {
         isLoading = true
         errorMessage = nil
         
+        // Validate verification code
+        guard !verificationCode.isEmpty else {
+            isLoading = false
+            errorMessage = "Please enter the verification code."
+            return
+        }
+        
+        guard verificationCode.count == 6 else {
+            isLoading = false
+            errorMessage = "Verification code must be 6 digits."
+            return
+        }
+        
         do {
+            print("🔐 Verifying OTP for: \(phoneNumber)")
             try await supabase.auth.verifyOTP(
                 phone: phoneNumber,
                 token: verificationCode,
@@ -128,10 +169,23 @@ class AuthenticationState: ObservableObject {
             isLoading = false
             moveToNextStep()
             print("✅ OTP verified successfully")
-        } catch {
+        } catch let error as NSError {
             isLoading = false
-            errorMessage = "Invalid verification code. Please try again."
-            print("❌ Error verifying OTP: \(error.localizedDescription)")
+            
+            // Provide more specific error messages
+            if error.localizedDescription.contains("Invalid") || error.localizedDescription.contains("invalid") {
+                errorMessage = "Invalid verification code. Please check and try again."
+            } else if error.localizedDescription.contains("expired") {
+                errorMessage = "Code expired. Please request a new code."
+            } else if error.localizedDescription.contains("too many") {
+                errorMessage = "Too many attempts. Please try again later."
+            } else {
+                errorMessage = "Verification failed: \(error.localizedDescription)"
+            }
+            
+            print("❌ Error verifying OTP: \(error)")
+            print("❌ Error domain: \(error.domain)")
+            print("❌ Error code: \(error.code)")
         }
     }
     
