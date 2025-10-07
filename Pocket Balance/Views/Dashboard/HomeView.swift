@@ -224,7 +224,7 @@ struct HomeView: View {
                         }
                         .buttonStyle(.plain)
                         
-                        // Expenses Card
+                        // Primary Monthly Expenses Card
                         Button(action: {
                             if expenses.isEmpty {
                                 showAddExpense = true
@@ -233,7 +233,7 @@ struct HomeView: View {
                             }
                         }) {
                             DashboardCardView(
-                                title: "Expenses This Month",
+                                title: "Primary Monthly Expenses",
                                 metric: totalExpenses.formatAsShortCurrency(),
                                 context: expenses.isEmpty ? "Tap to add expenses" : "\(expenses.count) expense\(expenses.count == 1 ? "" : "s") • Tap to view",
                                 iconSystemName: "arrow.down.circle",
@@ -457,7 +457,7 @@ struct ExpensesListView: View {
                             .foregroundColor(.secondary)
                         Text("No expenses yet")
                             .font(.system(size: 20, weight: .semibold))
-                        Text("Tap + to add your first expense")
+                        Text("Tap + to add your first primary expense")
                             .font(.system(size: 15))
                             .foregroundColor(.secondary)
                     }
@@ -484,7 +484,7 @@ struct ExpensesListView: View {
                 }
             }
             .background(Color(UIColor.systemGroupedBackground))
-            .navigationTitle("Expenses (\(expenses.reduce(0) { $0 + $1.amount }.formatAsCurrency()))")
+            .navigationTitle("Primary Monthly Expenses • \(expenses.reduce(0) { $0 + $1.amount }.formatAsCurrency())")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
@@ -950,7 +950,7 @@ struct AddExpenseSheet: View {
                 Spacer()
                 
                 VStack(spacing: 16) {
-                    Text("Add Expense")
+                    Text("Add Primary Expense")
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                     
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -972,7 +972,7 @@ struct AddExpenseSheet: View {
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.secondary)
                     
-                    TextField("e.g., Groceries, Transport", text: $description)
+                    TextField("e.g., Rent, Utilities, Groceries", text: $description)
                         .padding(16)
                         .background(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)
@@ -1069,7 +1069,7 @@ struct EditExpenseSheet: View {
                 Spacer()
                 
                 VStack(spacing: 16) {
-                    Text("Edit Expense")
+                    Text("Edit Primary Expense")
                         .font(.system(size: 28, weight: .bold, design: .rounded))
                     
                     HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -1091,7 +1091,7 @@ struct EditExpenseSheet: View {
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(.secondary)
                     
-                    TextField("e.g., Groceries, Transport", text: $description)
+                    TextField("e.g., Rent, Utilities, Groceries", text: $description)
                         .padding(16)
                         .background(
                             RoundedRectangle(cornerRadius: 12, style: .continuous)

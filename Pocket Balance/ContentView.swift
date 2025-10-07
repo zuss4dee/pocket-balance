@@ -14,6 +14,9 @@ class AppData: ObservableObject {
     @Published var expenses: [ExpenseItem] = []
     @Published var subscriptions: [SubscriptionItem] = []
     @Published var budgetCategories: [BudgetCategory] = []
+    @Published var isLoading = false
+    
+    private let supabaseService = SupabaseService.shared
     
     var totalIncome: Double {
         incomes.reduce(0) { $0 + $1.amount }
@@ -37,6 +40,33 @@ class AppData: ObservableObject {
     
     var unbudgetedBalance: Double {
         remainingBalance - totalBudgeted
+    }
+    
+    // MARK: - Load Data from Supabase
+    
+    @MainActor
+    func loadAllData() async {
+        isLoading = true
+        
+        do {
+            async let fetchedIncomes = supabaseService.fetchIncome()
+            async let fetchedExpenses = supabaseService.fetchExpenses()
+            async let fetchedSubscriptions = supabaseService.fetchSubscriptions()
+            async let fetchedBudgets = supabaseService.fetchBudgetCategories()
+            
+            let (incomes, expenses, subscriptions, budgets) = try await (fetchedIncomes, fetchedExpenses, fetchedSubscriptions, fetchedBudgets)
+            
+            self.incomes = incomes
+            self.expenses = expenses
+            self.subscriptions = subscriptions
+            self.budgetCategories = budgets
+            
+            print("✅ Data loaded from Supabase successfully")
+        } catch {
+            print("❌ Error loading data: \(error.localizedDescription)")
+        }
+        
+        isLoading = false
     }
 }
 
@@ -77,6 +107,11 @@ struct ContentView: View {
                 .tag(3)
         }
         .accentColor(.blue)
+        .onAppear {
+            Task {
+                await appData.loadAllData()
+            }
+        }
     }
 }
 
