@@ -138,6 +138,9 @@ struct LoginView: View {
                 EmailLoginSheet()
                     .environmentObject(authState)
             }
+            .sheet(isPresented: $showEmailConfirmation) {
+                EmailConfirmationSheet(email: email)
+            }
         }
     }
     
@@ -383,14 +386,24 @@ struct EmailLoginSheet: View {
     @EnvironmentObject var authState: AuthenticationState
     @State private var email: String = ""
     @State private var password: String = ""
+    @State private var confirmPassword: String = ""
     @State private var isSignUp: Bool = false
+    @State private var showEmailConfirmation = false
     
     private var isValidEmail: Bool {
-        email.contains("@") && email.contains(".")
+        email.contains("@") && email.contains(".") && email.count > 5
     }
     
     private var isValidPassword: Bool {
         password.count >= 6
+    }
+    
+    private var passwordsMatch: Bool {
+        !isSignUp || password == confirmPassword
+    }
+    
+    private var canSubmit: Bool {
+        isValidEmail && isValidPassword && passwordsMatch
     }
     
     var body: some View {
@@ -403,21 +416,57 @@ struct EmailLoginSheet: View {
                     .font(.system(size: 24, weight: .bold))
                 
                 VStack(spacing: 16) {
-                    TextField("Email", text: $email)
-                        .font(.system(size: 17))
-                        .keyboardType(.emailAddress)
-                        .autocapitalization(.none)
-                        .padding()
-                        .frame(height: 56)
-                        .background(Color(UIColor.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
+                    // Email Field
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("Email", text: $email)
+                            .font(.system(size: 17))
+                            .keyboardType(.emailAddress)
+                            .autocapitalization(.none)
+                            .padding()
+                            .frame(height: 56)
+                            .background(Color(UIColor.secondarySystemGroupedBackground))
+                            .cornerRadius(12)
+                        
+                        if !email.isEmpty && !isValidEmail {
+                            Text("Please enter a valid email address")
+                                .font(.system(size: 12))
+                                .foregroundColor(.red)
+                        }
+                    }
                     
-                    SecureField("Password", text: $password)
-                        .font(.system(size: 17))
-                        .padding()
-                        .frame(height: 56)
-                        .background(Color(UIColor.secondarySystemGroupedBackground))
-                        .cornerRadius(12)
+                    // Password Field
+                    VStack(alignment: .leading, spacing: 4) {
+                        SecureField("Password", text: $password)
+                            .font(.system(size: 17))
+                            .padding()
+                            .frame(height: 56)
+                            .background(Color(UIColor.secondarySystemGroupedBackground))
+                            .cornerRadius(12)
+                        
+                        if !password.isEmpty && !isValidPassword {
+                            Text("Password must be at least 6 characters")
+                                .font(.system(size: 12))
+                                .foregroundColor(.red)
+                        }
+                    }
+                    
+                    // Confirm Password Field (only for signup)
+                    if isSignUp {
+                        VStack(alignment: .leading, spacing: 4) {
+                            SecureField("Confirm Password", text: $confirmPassword)
+                                .font(.system(size: 17))
+                                .padding()
+                                .frame(height: 56)
+                                .background(Color(UIColor.secondarySystemGroupedBackground))
+                                .cornerRadius(12)
+                            
+                            if !confirmPassword.isEmpty && !passwordsMatch {
+                                Text("Passwords do not match")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.red)
+                            }
+                        }
+                    }
                 }
                 .padding(.horizontal, 20)
                 
@@ -438,6 +487,10 @@ struct EmailLoginSheet: View {
                     Task {
                         if isSignUp {
                             await authState.signUpWithEmail(email: email, password: password)
+                            // Check if email confirmation is needed
+                            if authState.errorMessage?.contains("check your email") == true {
+                                showEmailConfirmation = true
+                            }
                         } else {
                             await authState.signInWithEmail(email: email, password: password)
                         }
@@ -447,7 +500,7 @@ struct EmailLoginSheet: View {
                     }
                 }) {
                     HStack {
-                        Text(isSignUp ? "Sign Up" : "Sign In")
+                        Text(isSignUp ? "Create Account" : "Sign In")
                             .font(.system(size: 17, weight: .semibold))
                         if authState.isLoading {
                             ProgressView()
@@ -458,10 +511,10 @@ struct EmailLoginSheet: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 56)
-                    .background((isValidEmail && isValidPassword) ? Color.green : Color.gray.opacity(0.3))
+                    .background(canSubmit ? Color.green : Color.gray.opacity(0.3))
                     .cornerRadius(28)
                 }
-                .disabled(!isValidEmail || !isValidPassword || authState.isLoading)
+                .disabled(!canSubmit || authState.isLoading)
                 .padding(.horizontal, 20)
                 
                 Button(action: {
@@ -483,6 +536,79 @@ struct EmailLoginSheet: View {
                     }
                 }
             }
+        }
+    }
+}
+
+// MARK: - Email Confirmation Sheet
+
+struct EmailConfirmationSheet: View {
+    let email: String
+    @Environment(\.dismiss) var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 32) {
+                Spacer()
+                
+                // Success Icon
+                ZStack {
+                    Circle()
+                        .fill(Color.green.opacity(0.1))
+                        .frame(width: 100, height: 100)
+                    
+                    Image(systemName: "envelope.badge")
+                        .font(.system(size: 40, weight: .medium))
+                        .foregroundColor(.green)
+                }
+                
+                VStack(spacing: 16) {
+                    Text("Check Your Email")
+                        .font(.system(size: 28, weight: .bold))
+                        .multilineTextAlignment(.center)
+                    
+                    Text("We've sent a confirmation link to:")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                    
+                    Text(email)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.blue)
+                        .multilineTextAlignment(.center)
+                }
+                
+                VStack(spacing: 12) {
+                    Text("Please click the link in your email to verify your account and complete the signup process.")
+                        .font(.system(size: 15))
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                    
+                    Text("If you don't see the email, check your spam folder.")
+                        .font(.system(size: 14))
+                        .foregroundColor(.orange)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 20)
+                }
+                
+                Spacer()
+                
+                Button("Got it") {
+                    dismiss()
+                }
+                .font(.system(size: 17, weight: .semibold))
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .background(Color.green)
+                .cornerRadius(28)
+                .padding(.horizontal, 20)
+                .padding(.bottom, 30)
+            }
+            .background(Color(UIColor.systemGroupedBackground))
+            .navigationTitle("Email Confirmation")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

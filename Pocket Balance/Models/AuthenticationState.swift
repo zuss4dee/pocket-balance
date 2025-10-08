@@ -234,7 +234,7 @@ class AuthenticationState: ObservableObject {
             
             // Check if email confirmation is required
             if response.user.emailConfirmedAt == nil {
-                errorMessage = "Please check your email and click the confirmation link to complete signup."
+                errorMessage = "✅ Account created! Please check your email and click the confirmation link to complete signup."
                 print("📧 Email confirmation required")
             } else {
                 // Move to profile creation
@@ -245,14 +245,18 @@ class AuthenticationState: ObservableObject {
             isLoading = false
             
             // Provide more specific error messages
-            if error.localizedDescription.contains("already registered") {
-                errorMessage = "An account with this email already exists. Try signing in instead."
-            } else if error.localizedDescription.contains("Invalid email") {
-                errorMessage = "Please enter a valid email address."
-            } else if error.localizedDescription.contains("Password") {
-                errorMessage = "Password must be at least 6 characters long."
+            if error.localizedDescription.contains("already registered") || error.localizedDescription.contains("already exists") {
+                errorMessage = "❌ An account with this email already exists. Try signing in instead."
+            } else if error.localizedDescription.contains("Invalid email") || error.localizedDescription.contains("invalid email") {
+                errorMessage = "❌ Please enter a valid email address."
+            } else if error.localizedDescription.contains("Password") || error.localizedDescription.contains("password") {
+                errorMessage = "❌ Password must be at least 6 characters long."
+            } else if error.localizedDescription.contains("network") || error.localizedDescription.contains("connection") {
+                errorMessage = "❌ Network error. Please check your internet connection and try again."
+            } else if error.localizedDescription.contains("rate limit") || error.localizedDescription.contains("too many") {
+                errorMessage = "❌ Too many attempts. Please wait a few minutes and try again."
             } else {
-                errorMessage = "Failed to create account: \(error.localizedDescription)"
+                errorMessage = "❌ Failed to create account. Please try again or contact support if the problem persists."
             }
             
             print("❌ Error signing up with email: \(error.localizedDescription)")
