@@ -214,17 +214,47 @@ class AuthenticationState: ObservableObject {
         isLoading = true
         errorMessage = nil
         
+        // Validate input
+        guard !email.isEmpty && email.contains("@") else {
+            isLoading = false
+            errorMessage = "Please enter a valid email address."
+            return
+        }
+        
+        guard password.count >= 6 else {
+            isLoading = false
+            errorMessage = "Password must be at least 6 characters long."
+            return
+        }
+        
         do {
             print("📧 Signing up with email: \(email)")
-            try await client.auth.signUp(email: email, password: password)
+            let response = try await client.auth.signUp(email: email, password: password)
             isLoading = false
             
-            // Move to profile creation
-            currentStep = .createProfile
-            print("✅ Email sign-up successful")
-        } catch {
+            // Check if email confirmation is required
+            if response.user?.emailConfirmedAt == nil {
+                errorMessage = "Please check your email and click the confirmation link to complete signup."
+                print("📧 Email confirmation required")
+            } else {
+                // Move to profile creation
+                currentStep = .createProfile
+                print("✅ Email sign-up successful")
+            }
+        } catch let error as NSError {
             isLoading = false
-            errorMessage = "Failed to create account. Please try again."
+            
+            // Provide more specific error messages
+            if error.localizedDescription.contains("already registered") {
+                errorMessage = "An account with this email already exists. Try signing in instead."
+            } else if error.localizedDescription.contains("Invalid email") {
+                errorMessage = "Please enter a valid email address."
+            } else if error.localizedDescription.contains("Password") {
+                errorMessage = "Password must be at least 6 characters long."
+            } else {
+                errorMessage = "Failed to create account: \(error.localizedDescription)"
+            }
+            
             print("❌ Error signing up with email: \(error.localizedDescription)")
         }
     }
