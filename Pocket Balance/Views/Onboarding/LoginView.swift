@@ -12,6 +12,8 @@ struct LoginView: View {
     @EnvironmentObject var authState: AuthenticationState
     @State private var showPhoneLogin = false
     @State private var showEmailLogin = false
+    @State private var showEmailConfirmation = false
+    @State private var confirmationEmail = ""
     
     var body: some View {
         NavigationStack {
@@ -135,11 +137,16 @@ struct LoginView: View {
                     .environmentObject(authState)
             }
             .sheet(isPresented: $showEmailLogin) {
-                EmailLoginSheet()
-                    .environmentObject(authState)
+                EmailLoginSheet(
+                    onEmailConfirmationNeeded: { email in
+                        confirmationEmail = email
+                        showEmailConfirmation = true
+                    }
+                )
+                .environmentObject(authState)
             }
             .sheet(isPresented: $showEmailConfirmation) {
-                EmailConfirmationSheet(email: email)
+                EmailConfirmationSheet(email: confirmationEmail)
             }
         }
     }
@@ -388,7 +395,8 @@ struct EmailLoginSheet: View {
     @State private var password: String = ""
     @State private var confirmPassword: String = ""
     @State private var isSignUp: Bool = false
-    @State private var showEmailConfirmation = false
+    
+    let onEmailConfirmationNeeded: (String) -> Void
     
     private var isValidEmail: Bool {
         email.contains("@") && email.contains(".") && email.count > 5
@@ -489,7 +497,7 @@ struct EmailLoginSheet: View {
                             await authState.signUpWithEmail(email: email, password: password)
                             // Check if email confirmation is needed
                             if authState.errorMessage?.contains("check your email") == true {
-                                showEmailConfirmation = true
+                                onEmailConfirmationNeeded(email)
                             }
                         } else {
                             await authState.signInWithEmail(email: email, password: password)
