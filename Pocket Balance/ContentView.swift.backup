@@ -7,7 +7,6 @@
 
 import SwiftUI
 import Combine
-import Supabase
 
 // Shared AppData to pass between tabs
 class AppData: ObservableObject {
@@ -15,9 +14,6 @@ class AppData: ObservableObject {
     @Published var expenses: [ExpenseItem] = []
     @Published var subscriptions: [SubscriptionItem] = []
     @Published var budgetCategories: [BudgetCategory] = []
-    @Published var isLoading = false
-    
-    private let supabaseService = SupabaseService.shared
     
     var totalIncome: Double {
         incomes.reduce(0) { $0 + $1.amount }
@@ -41,33 +37,6 @@ class AppData: ObservableObject {
     
     var unbudgetedBalance: Double {
         remainingBalance - totalBudgeted
-    }
-    
-    // MARK: - Load Data from Supabase
-    
-    @MainActor
-    func loadAllData() async {
-        isLoading = true
-        
-        do {
-            async let fetchedIncomes = supabaseService.fetchIncome()
-            async let fetchedExpenses = supabaseService.fetchExpenses()
-            async let fetchedSubscriptions = supabaseService.fetchSubscriptions()
-            async let fetchedBudgets = supabaseService.fetchBudgetCategories()
-            
-            let (incomes, expenses, subscriptions, budgets) = try await (fetchedIncomes, fetchedExpenses, fetchedSubscriptions, fetchedBudgets)
-            
-            self.incomes = incomes
-            self.expenses = expenses
-            self.subscriptions = subscriptions
-            self.budgetCategories = budgets
-            
-            print("✅ Data loaded from Supabase successfully")
-        } catch {
-            print("❌ Error loading data: \(error.localizedDescription)")
-        }
-        
-        isLoading = false
     }
 }
 
@@ -108,11 +77,6 @@ struct ContentView: View {
                 .tag(3)
         }
         .accentColor(.blue)
-        .onAppear {
-            Task {
-                await appData.loadAllData()
-            }
-        }
     }
 }
 
@@ -144,30 +108,6 @@ struct BudgetViewWrapper: View {
 // MARK: - Tab Views
 
 struct ProfileView: View {
-    @State private var showingSignOutAlert = false
-    @State private var isSigningOut = false
-    @State private var userFullName: String = ""
-    @State private var userPhone: String = ""
-    @State private var userEmail: String = ""
-    @State private var isLoadingProfile = true
-    
-    private var userInitial: String {
-        if let firstChar = userFullName.first {
-            return String(firstChar).uppercased()
-        }
-        return "U"
-    }
-    
-    private var displayContact: String {
-        // Show email if available, otherwise show phone
-        if !userEmail.isEmpty {
-            return userEmail
-        } else if !userPhone.isEmpty {
-            return userPhone
-        }
-        return ""
-    }
-    
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -184,39 +124,23 @@ struct ProfileView: View {
                             )
                             .frame(width: 80, height: 80)
                             .overlay(
-                                Group {
-                                    if isLoadingProfile {
-                                        ProgressView()
-                                            .tint(.white)
-                                    } else {
-                                        Text(userInitial)
-                                            .font(.system(size: 36, weight: .bold))
-                                            .foregroundColor(.white)
-                                    }
-                                }
+                                Text("D")
+                                    .font(.system(size: 36, weight: .bold))
+                                    .foregroundColor(.white)
                             )
                         
-                        if isLoadingProfile {
-                            ProgressView()
-                                .padding(.top, 8)
-                        } else {
-                            Text(userFullName.isEmpty ? "User" : userFullName)
-                                .font(.system(size: 24, weight: .bold, design: .rounded))
-                            
-                            if !displayContact.isEmpty {
-                                Text(displayContact)
-                                    .font(.system(size: 15, weight: .regular))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
+                        Text("Dami")
+                            .font(.system(size: 24, weight: .bold, design: .rounded))
+                        
+                        Text("dami@example.com")
+                            .font(.system(size: 15, weight: .regular))
+                            .foregroundColor(.secondary)
                     }
                     .padding(.top, 20)
                     
                     // Profile Options
                     VStack(spacing: 0) {
-                        NavigationLink(destination: ProfileSettingsView(isPresentedAsSheet: false, onDismiss: nil)) {
-                            ProfileOptionRow(icon: "gear", title: "Settings", color: .gray)
-                        }
+                        ProfileOptionRow(icon: "gear", title: "Settings", color: .gray)
                         Divider().padding(.leading, 56)
                         ProfileOptionRow(icon: "bell", title: "Notifications", color: .orange)
                         Divider().padding(.leading, 56)
@@ -232,26 +156,18 @@ struct ProfileView: View {
                     
                     // Sign Out Button
                     Button(action: {
-                        showingSignOutAlert = true
+                        print("Sign out tapped")
                     }) {
-                        HStack {
-                            if isSigningOut {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                                    .padding(.trailing, 8)
-                            }
-                            Text(isSigningOut ? "Signing Out..." : "Sign Out")
-                                .font(.system(size: 16, weight: .semibold))
-                                .foregroundColor(.red)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(Color(UIColor.secondarySystemGroupedBackground))
-                        )
+                        Text("Sign Out")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundColor(.red)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 14)
+                            .background(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .fill(Color(UIColor.secondarySystemGroupedBackground))
+                            )
                     }
-                    .disabled(isSigningOut)
                     .padding(.horizontal, 20)
                 }
                 .padding(.bottom, 40)
@@ -259,86 +175,6 @@ struct ProfileView: View {
             .background(Color(UIColor.systemGroupedBackground))
             .navigationTitle("Profile")
             .navigationBarTitleDisplayMode(.inline)
-            .alert("Sign Out", isPresented: $showingSignOutAlert) {
-                Button("Cancel", role: .cancel) { }
-                Button("Sign Out", role: .destructive) {
-                    signOut()
-                }
-            } message: {
-                Text("Are you sure you want to sign out?")
-            }
-            .task {
-                await loadUserProfile()
-            }
-        }
-    }
-    
-    @MainActor
-    private func loadUserProfile() async {
-        isLoadingProfile = true
-        
-        do {
-            // Get current user from Supabase
-            let user = try await SupabaseService.shared.client.auth.session.user
-            
-            // Get phone number (if available)
-            if let phone = user.phone {
-                userPhone = phone
-            }
-            
-            // Get email (if available)
-            if let email = user.email {
-                userEmail = email
-            }
-            
-            // Get full name from user metadata
-            // userMetadata is [String: AnyJSON]
-            if let fullNameJSON = user.userMetadata["full_name"] {
-                // Try to extract string from AnyJSON
-                switch fullNameJSON {
-                case .string(let fullName):
-                    userFullName = fullName
-                default:
-                    // Try encoding/decoding approach
-                    do {
-                        let data = try JSONEncoder().encode(fullNameJSON)
-                        let fullName = try JSONDecoder().decode(String.self, from: data)
-                        userFullName = fullName
-                    } catch {
-                        print("⚠️ Could not decode full_name from metadata")
-                    }
-                }
-            }
-            
-            print("✅ Loaded user profile:")
-            print("   👤 Name: \(userFullName)")
-            print("   📧 Email: \(userEmail)")
-            print("   📱 Phone: \(userPhone)")
-            print("   🔍 Metadata: \(user.userMetadata)")
-            
-        } catch {
-            print("❌ Error loading user profile: \(error.localizedDescription)")
-            // Set defaults if error
-            userFullName = "User"
-        }
-        
-        isLoadingProfile = false
-    }
-    
-    private func signOut() {
-        isSigningOut = true
-        
-        Task {
-            do {
-                try await SupabaseService.shared.client.auth.signOut()
-                print("✅ Successfully signed out")
-                // The auth listener in AppRootView will automatically handle the navigation
-            } catch {
-                print("❌ Error signing out: \(error.localizedDescription)")
-                await MainActor.run {
-                    isSigningOut = false
-                }
-            }
         }
     }
 }
@@ -349,25 +185,30 @@ struct ProfileOptionRow: View {
     let color: Color
     
     var body: some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .font(.system(size: 20, weight: .regular))
-                .foregroundColor(color)
-                .frame(width: 24)
-            
-            Text(title)
-                .font(.system(size: 16, weight: .regular))
-                .foregroundColor(.primary)
-            
-            Spacer()
-            
-            Image(systemName: "chevron.right")
-                .font(.system(size: 14, weight: .semibold))
-                .foregroundColor(.secondary)
+        Button(action: {
+            print("\(title) tapped")
+        }) {
+            HStack(spacing: 16) {
+                Image(systemName: icon)
+                    .font(.system(size: 20, weight: .regular))
+                    .foregroundColor(color)
+                    .frame(width: 24)
+                
+                Text(title)
+                    .font(.system(size: 16, weight: .regular))
+                    .foregroundColor(.primary)
+                
+                Spacer()
+                
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .contentShape(Rectangle())
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .contentShape(Rectangle())
+        .buttonStyle(.plain)
     }
 }
 
@@ -673,10 +514,10 @@ struct CreditCardRow: View {
     let onDelete: () -> Void
     
     var body: some View {
-        HStack(spacing: 12) {
-            // Card Icon with Brand Logo (smaller)
+        HStack(spacing: 16) {
+            // Card Icon with Brand Logo
             ZStack {
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .fill(
                         LinearGradient(
                             colors: [card.cardColor, card.cardColor.opacity(0.7)],
@@ -684,50 +525,42 @@ struct CreditCardRow: View {
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 40, height: 40)
+                    .frame(width: 54, height: 54)
                 
                 Image(systemName: card.displayLogo)
-                    .font(.system(size: 16, weight: .regular))
+                    .font(.system(size: 22, weight: .regular))
                     .foregroundColor(.white)
             }
             
-            // Card Info (more compact)
-            VStack(alignment: .leading, spacing: 2) {
+            // Card Info
+            VStack(alignment: .leading, spacing: 4) {
                 Text(card.name.isEmpty ? "Credit Card" : card.name)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 16, weight: .semibold))
                     .foregroundColor(card.name.isEmpty ? .secondary : .primary)
-                    .lineLimit(1)
                 
-                HStack(spacing: 3) {
+                HStack(spacing: 4) {
                     if card.detectedBrand != .generic {
                         Text(card.detectedBrand.brandName)
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.system(size: 13, weight: .medium))
                             .foregroundColor(card.cardColor)
                         Text("•")
-                            .font(.system(size: 11, weight: .regular))
+                            .font(.system(size: 13, weight: .regular))
                             .foregroundColor(.secondary)
                     }
-                    Text("Limit")
-                        .font(.system(size: 11, weight: .regular))
+                    Text("Credit Limit")
+                        .font(.system(size: 13, weight: .regular))
                         .foregroundColor(.secondary)
                 }
             }
             
             Spacer()
             
-            // Limit Amount (smaller font)
-            VStack(alignment: .trailing, spacing: 2) {
-                Text(card.limit.formatAsCurrency())
-                    .font(.system(size: 14, weight: .bold, design: .rounded))
-                    .foregroundColor(.primary)
-                    .lineLimit(1)
-                
-                Text("Available")
-                    .font(.system(size: 10, weight: .regular))
-                    .foregroundColor(.secondary)
-            }
+            // Limit Amount
+            Text(card.limit.formatAsCurrency())
+                .font(.system(size: 16, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
             
-            // Menu (smaller)
+            // Menu
             Menu {
                 Button(action: onEdit) {
                     Label("Edit", systemImage: "pencil")
@@ -737,14 +570,13 @@ struct CreditCardRow: View {
                 }
             } label: {
                 Image(systemName: "ellipsis.circle")
-                    .font(.system(size: 16))
+                    .font(.system(size: 20))
                     .foregroundColor(.secondary)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(16)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(Color(UIColor.secondarySystemGroupedBackground))
         )
     }
@@ -1237,17 +1069,8 @@ struct BudgetingViewStandalone: View {
                                                 editingCategory = category
                                             },
                                             onDelete: {
-                                                Task {
-                                                    do {
-                                                        try await SupabaseService.shared.deleteBudgetCategory(id: category.id)
-                                                        await MainActor.run {
-                                                            withAnimation {
-                                                                budgetCategories.removeAll { $0.id == category.id }
-                                                            }
-                                                        }
-                                                    } catch {
-                                                        print("Failed to delete budget category: \(error.localizedDescription)")
-                                                    }
+                                                withAnimation {
+                                                    budgetCategories.removeAll { $0.id == category.id }
                                                 }
                                             }
                                         )

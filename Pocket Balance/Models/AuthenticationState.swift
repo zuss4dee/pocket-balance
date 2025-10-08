@@ -27,9 +27,8 @@ class AuthenticationState: ObservableObject {
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
     
-    private let supabaseURL = URL(string: "https://dzxagbbkdzuqmcevqgwh.supabase.co")!
-    private let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eGFnYmJrZHp1cW1jZXZxZ3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MTM1MjcsImV4cCI6MjA3NTM4OTUyN30.X9lPaChueB7xSTreWiDS9IuuJIUwpagVt7AW1VWkRkg"
-    private lazy var supabase = SupabaseClient(supabaseURL: supabaseURL, supabaseKey: supabaseKey)
+    // Use the shared Supabase client so AppRootView's auth listener receives events
+    private var client: SupabaseClient { SupabaseService.shared.client }
     
     func moveToNextStep() {
         switch currentStep {
@@ -80,7 +79,7 @@ class AuthenticationState: ObservableObject {
             )
             
             // Update the user profile in Supabase
-            try await supabase.auth.update(user: attributes)
+            try await client.auth.update(user: attributes)
             
             print("✅ User profile saved successfully.")
             
@@ -117,7 +116,7 @@ class AuthenticationState: ObservableObject {
         
         do {
             print("📱 Sending OTP to: \(phoneNumber)")
-            try await supabase.auth.signInWithOTP(phone: phoneNumber)
+            try await client.auth.signInWithOTP(phone: phoneNumber)
             isLoading = false
             moveToNextStep()
             print("✅ OTP sent successfully to \(phoneNumber)")
@@ -161,7 +160,7 @@ class AuthenticationState: ObservableObject {
         
         do {
             print("🔐 Verifying OTP for: \(phoneNumber)")
-            try await supabase.auth.verifyOTP(
+            try await client.auth.verifyOTP(
                 phone: phoneNumber,
                 token: verificationCode,
                 type: .sms
@@ -198,7 +197,7 @@ class AuthenticationState: ObservableObject {
         
         do {
             print("📧 Signing in with email: \(email)")
-            try await supabase.auth.signIn(email: email, password: password)
+            try await client.auth.signIn(email: email, password: password)
             isLoading = false
             isAuthenticated = true
             currentStep = .completed
@@ -217,7 +216,7 @@ class AuthenticationState: ObservableObject {
         
         do {
             print("📧 Signing up with email: \(email)")
-            try await supabase.auth.signUp(email: email, password: password)
+            try await client.auth.signUp(email: email, password: password)
             isLoading = false
             
             // Move to profile creation
@@ -246,7 +245,7 @@ class AuthenticationState: ObservableObject {
         
         do {
             print("🍎 Signing in with Apple")
-            try await supabase.auth.signInWithIdToken(credentials: .init(provider: .apple, idToken: tokenString))
+            try await client.auth.signInWithIdToken(credentials: .init(provider: .apple, idToken: tokenString))
             
             // If we have the full name, save it
             if let fullName = fullName {
@@ -257,7 +256,7 @@ class AuthenticationState: ObservableObject {
                 if !name.isEmpty {
                     self.fullName = name
                     let attributes = UserAttributes(data: ["full_name": .string(name)])
-                    try await supabase.auth.update(user: attributes)
+                    try await client.auth.update(user: attributes)
                 }
             }
             
@@ -277,7 +276,7 @@ class AuthenticationState: ObservableObject {
     @MainActor
     func signOut() async {
         do {
-            try await supabase.auth.signOut()
+            try await client.auth.signOut()
             isAuthenticated = false
             currentStep = .welcome
             phoneNumber = ""

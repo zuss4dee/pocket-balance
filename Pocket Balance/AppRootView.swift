@@ -11,6 +11,7 @@ import Supabase
 struct AppRootView: View {
     @State private var isCheckingAuth = true
     @State private var isAuthenticated = false
+    @State private var shouldPromptProfileSetup = false
     
     var body: some View {
         Group {
@@ -32,6 +33,11 @@ struct AppRootView: View {
             } else if isAuthenticated {
                 // User is logged in → Show main app
                 ContentView()
+                    .sheet(isPresented: $shouldPromptProfileSetup) {
+                        ProfileSettingsView(isPresentedAsSheet: true, onDismiss: {
+                            shouldPromptProfileSetup = false
+                        })
+                    }
                     .transition(.opacity)
             } else {
                 // User is NOT logged in → Show login screen
@@ -59,6 +65,9 @@ struct AppRootView: View {
             // If we got a session without error, user is authenticated
             isAuthenticated = true
             print("✅ User is authenticated: \(session.user.id)")
+
+            // Evaluate if we should prompt for profile completion
+            await evaluateProfileCompletion()
         } catch {
             // No session or session expired → User needs to log in
             isAuthenticated = false
@@ -92,14 +101,47 @@ struct AppRootView: View {
                         print("✅ User signed in")
                         isAuthenticated = true
                         isCheckingAuth = false
+                        Task { await evaluateProfileCompletion() }
                     case .signedOut:
                         print("ℹ️ User signed out")
                         isAuthenticated = false
+                        shouldPromptProfileSetup = false
                     default:
                         break
                     }
                 }
             }
+        }
+    }
+
+    @MainActor
+    private func evaluateProfileCompletion() async {
+        do {
+            let user = try await SupabaseService.shared.client.auth.session.user
+
+            // Extract metadata values safely
+            var fullName: String = ""
+            if let fullNameJSON = user.userMetadata["full_name"] {
+                switch fullNameJSON {
+                case .string(let name):
+                    fullName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                default:
+                    break
+                }
+            }
+
+            let hasEmail = (user.email ?? "").isEmpty == false
+            let hasPhone = (user.phone ?? "").isEmpty == false
+
+            // Prompt if full name missing OR both email and phone missing
+            shouldPromptProfileSetup = fullName.isEmpty || (!hasEmail && !hasPhone)
+
+            if shouldPromptProfileSetup {
+                print("ℹ️ Prompting user to complete profile details")
+            }
+        } catch {
+            // If we can't load the user, do not block
+            shouldPromptProfileSetup = false
         }
     }
 }
