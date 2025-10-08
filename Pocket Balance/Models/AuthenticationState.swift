@@ -234,7 +234,7 @@ class AuthenticationState: ObservableObject {
             
             // Check if email confirmation is required
             if response.user.emailConfirmedAt == nil {
-                errorMessage = "✅ Account created! Please check your email and click the confirmation link to complete signup."
+                errorMessage = "✅ Account created! Please check your email and click the confirmation link to complete signup. If you don't see the email, check your spam folder."
                 print("📧 Email confirmation required")
             } else {
                 // Move to profile creation
@@ -255,6 +255,8 @@ class AuthenticationState: ObservableObject {
                 errorMessage = "❌ Network error. Please check your internet connection and try again."
             } else if error.localizedDescription.contains("rate limit") || error.localizedDescription.contains("too many") {
                 errorMessage = "❌ Too many attempts. Please wait a few minutes and try again."
+            } else if error.localizedDescription.contains("email") && error.localizedDescription.contains("confirm") {
+                errorMessage = "❌ Email confirmation is not enabled. Please contact support to enable email verification."
             } else {
                 errorMessage = "❌ Failed to create account. Please try again or contact support if the problem persists."
             }
