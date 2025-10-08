@@ -233,7 +233,7 @@ class AuthenticationState: ObservableObject {
             isLoading = false
             
             // Check if email confirmation is required
-            if response.user?.emailConfirmedAt == nil {
+            if response.user.emailConfirmedAt == nil {
                 errorMessage = "Please check your email and click the confirmation link to complete signup."
                 print("📧 Email confirmation required")
             } else {
