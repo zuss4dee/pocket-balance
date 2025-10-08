@@ -16,6 +16,8 @@ class AppData: ObservableObject {
     @Published var subscriptions: [SubscriptionItem] = []
     @Published var budgetCategories: [BudgetCategory] = []
     @Published var isLoading = false
+    @Published var errorMessage: String?
+    @Published var lastRefreshDate: Date?
     
     private let supabaseService = SupabaseService.shared
     
@@ -48,9 +50,11 @@ class AppData: ObservableObject {
     @MainActor
     func loadAllData() async {
         isLoading = true
+        errorMessage = nil
         
         do {
-            async let fetchedIncomes = supabaseService.fetchIncome()
+            // Use fetchAllIncome for complete data loading
+            async let fetchedIncomes = supabaseService.fetchAllIncome()
             async let fetchedExpenses = supabaseService.fetchExpenses()
             async let fetchedSubscriptions = supabaseService.fetchSubscriptions()
             async let fetchedBudgets = supabaseService.fetchBudgetCategories()
@@ -61,13 +65,26 @@ class AppData: ObservableObject {
             self.expenses = expenses
             self.subscriptions = subscriptions
             self.budgetCategories = budgets
+            self.lastRefreshDate = Date()
             
             print("✅ Data loaded from Supabase successfully")
         } catch {
-            print("❌ Error loading data: \(error.localizedDescription)")
+            let errorMsg = "Failed to load data: \(error.localizedDescription)"
+            print("❌ \(errorMsg)")
+            self.errorMessage = errorMsg
         }
         
         isLoading = false
+    }
+    
+    @MainActor
+    func refreshData() async {
+        await loadAllData()
+    }
+    
+    @MainActor
+    func clearError() {
+        errorMessage = nil
     }
 }
 

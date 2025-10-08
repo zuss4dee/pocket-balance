@@ -29,7 +29,23 @@ class SupabaseService {
     
     // MARK: - INCOME OPERATIONS
     
-    func fetchIncome() async throws -> [IncomeItem] {
+    func fetchIncome(limit: Int = 50, offset: Int = 0) async throws -> [IncomeItem] {
+        let userId = try await getCurrentUserId()
+        
+        let response: [DatabaseIncome] = try await client
+            .from("income")
+            .select()
+            .eq("user_id", value: userId.uuidString)
+            .order("created_at", ascending: false)
+            .limit(limit)
+            .range(from: offset, to: offset + limit - 1)
+            .execute()
+            .value
+        
+        return response.map { $0.toIncomeItem() }
+    }
+    
+    func fetchAllIncome() async throws -> [IncomeItem] {
         let userId = try await getCurrentUserId()
         
         let response: [DatabaseIncome] = try await client
@@ -75,6 +91,32 @@ class SupabaseService {
             .delete()
             .eq("id", value: id.uuidString)
             .execute()
+    }
+    
+    // MARK: - DATA CLEANUP OPERATIONS
+    
+    func cleanupOldData(olderThanDays: Int = 365) async throws {
+        let userId = try await getCurrentUserId()
+        let cutoffDate = Calendar.current.date(byAdding: .day, value: -olderThanDays, to: Date())!
+        let cutoffISO = ISO8601DateFormatter().string(from: cutoffDate)
+        
+        // Clean up old income records
+        try await client
+            .from("income")
+            .delete()
+            .eq("user_id", value: userId.uuidString)
+            .lt("created_at", value: cutoffISO)
+            .execute()
+        
+        // Clean up old expense records
+        try await client
+            .from("expenses")
+            .delete()
+            .eq("user_id", value: userId.uuidString)
+            .lt("created_at", value: cutoffISO)
+            .execute()
+        
+        print("✅ Cleaned up data older than \(olderThanDays) days")
     }
     
     // MARK: - EXPENSES OPERATIONS

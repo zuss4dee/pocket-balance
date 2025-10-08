@@ -128,6 +128,7 @@ struct HomeView: View {
     @State private var showSubscriptionsList = false
     @State private var userFullName: String = "User"
     @State private var isLoadingUserName = true
+    @State private var isRefreshing = false
     
     var totalIncome: Double {
         incomes.reduce(0) { $0 + $1.amount }
@@ -167,6 +168,12 @@ struct HomeView: View {
                         }
                         
                         Spacer()
+                        
+                        // Refresh indicator
+                        if isRefreshing {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                        }
                     }
                     .padding(.horizontal, 20)
                     .padding(.top, 8)
@@ -304,6 +311,9 @@ struct HomeView: View {
             .sheet(isPresented: $showSubscriptionsList) {
                 SubscriptionsListView(subscriptions: $subscriptions)
             }
+            .refreshable {
+                await refreshData()
+            }
             .task {
                 await loadUserName()
             }
@@ -325,6 +335,13 @@ struct HomeView: View {
         default:
             return "Good night,"
         }
+    }
+    
+    @MainActor
+    private func refreshData() async {
+        isRefreshing = true
+        await loadUserName()
+        isRefreshing = false
     }
     
     @MainActor
