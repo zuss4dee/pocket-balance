@@ -571,6 +571,56 @@ struct EmailLoginSheet: View {
                     .padding(.top, 8)
                 }
                 
+                // Additional helpful information for sign in
+                if !isSignUp {
+                    VStack(spacing: 12) {
+                        HStack(spacing: 16) {
+                            VStack(spacing: 4) {
+                                Image(systemName: "chart.line.uptrend.xyaxis")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.blue)
+                                Text("Dashboard")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            VStack(spacing: 4) {
+                                Image(systemName: "creditcard")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.green)
+                                Text("Cards")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            VStack(spacing: 4) {
+                                Image(systemName: "chart.pie")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.orange)
+                                Text("Budget")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                            
+                            VStack(spacing: 4) {
+                                Image(systemName: "person.circle")
+                                    .font(.system(size: 20))
+                                    .foregroundColor(.purple)
+                                Text("Profile")
+                                    .font(.system(size: 12, weight: .medium))
+                                    .foregroundColor(.secondary)
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                        
+                        Text("Access all your financial tools in one place")
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.vertical, 12)
+                }
+                
                 Spacer()
                 
                 if let errorMessage = authState.errorMessage {
