@@ -129,6 +129,7 @@ struct HomeView: View {
     @State private var userFullName: String = "User"
     @State private var isLoadingUserName = true
     @State private var isRefreshing = false
+    @State private var isDataLoading = true
     
     var totalIncome: Double {
         incomes.reduce(0) { $0 + $1.amount }
@@ -316,7 +317,36 @@ struct HomeView: View {
             }
             .task {
                 await loadUserName()
+                // Set data loading to false after a short delay to allow data to load
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                isDataLoading = false
             }
+            .overlay(
+                // Loading overlay
+                Group {
+                    if isDataLoading {
+                        ZStack {
+                            Color.black.opacity(0.3)
+                                .ignoresSafeArea()
+                            
+                            VStack(spacing: 16) {
+                                ProgressView()
+                                    .scaleEffect(1.2)
+                                    .tint(.white)
+                                
+                                Text("Loading your data...")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.white)
+                            }
+                            .padding(24)
+                            .background(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(.ultraThinMaterial)
+                            )
+                        }
+                    }
+                }
+            )
         }
     }
     

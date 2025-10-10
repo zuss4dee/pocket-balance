@@ -52,6 +52,8 @@ class AppData: ObservableObject {
         isLoading = true
         errorMessage = nil
         
+        print("🔄 Starting data load from Supabase...")
+        
         do {
             // Use fetchAllIncome for complete data loading
             async let fetchedIncomes = supabaseService.fetchAllIncome()
@@ -67,7 +69,11 @@ class AppData: ObservableObject {
             self.budgetCategories = budgets
             self.lastRefreshDate = Date()
             
-            print("✅ Data loaded from Supabase successfully")
+            print("✅ Data loaded from Supabase successfully:")
+            print("   📊 Incomes: \(incomes.count) items")
+            print("   💸 Expenses: \(expenses.count) items")
+            print("   🔄 Subscriptions: \(subscriptions.count) items")
+            print("   📋 Budgets: \(budgets.count) items")
         } catch {
             let errorMsg = "Failed to load data: \(error.localizedDescription)"
             print("❌ \(errorMsg)")
@@ -85,6 +91,17 @@ class AppData: ObservableObject {
     @MainActor
     func clearError() {
         errorMessage = nil
+    }
+    
+    @MainActor
+    func clearAllData() {
+        incomes = []
+        expenses = []
+        subscriptions = []
+        budgetCategories = []
+        lastRefreshDate = nil
+        errorMessage = nil
+        print("🧹 Cleared all user data")
     }
 }
 
@@ -127,7 +144,15 @@ struct ContentView: View {
         .accentColor(.blue)
         .onAppear {
             Task {
+                print("🔄 ContentView appeared - loading data...")
                 await appData.loadAllData()
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .NSApplicationDidBecomeActive)) { _ in
+            // Reload data when app becomes active (in case data was updated elsewhere)
+            Task {
+                print("🔄 App became active - refreshing data...")
+                await appData.refreshData()
             }
         }
     }

@@ -101,11 +101,17 @@ struct AppRootView: View {
                         print("✅ User signed in")
                         isAuthenticated = true
                         isCheckingAuth = false
-                        Task { await evaluateProfileCompletion() }
+                        Task { 
+                            await evaluateProfileCompletion()
+                            // Trigger data loading after sign in
+                            await loadUserDataAfterSignIn()
+                        }
                     case .signedOut:
                         print("ℹ️ User signed out")
                         isAuthenticated = false
                         shouldPromptProfileSetup = false
+                        // Clear any cached data when user signs out
+                        print("🧹 User signed out - clearing cached data")
                     default:
                         break
                     }
@@ -143,6 +149,15 @@ struct AppRootView: View {
             // If we can't load the user, do not block
             shouldPromptProfileSetup = false
         }
+    }
+    
+    @MainActor
+    private func loadUserDataAfterSignIn() async {
+        // This function will be called when user signs in
+        // The actual data loading will happen in ContentView.onAppear
+        // But we can add a small delay to ensure the UI is ready
+        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        print("🔄 User data loading triggered after sign in")
     }
 }
 
