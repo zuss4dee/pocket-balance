@@ -15,7 +15,6 @@ struct LoginView: View {
     @State private var emailSheetIsSignUp = false
     @State private var showEmailConfirmation = false
     @State private var confirmationEmail = ""
-    @State private var identifier: String = ""
     
     var body: some View {
         NavigationStack {
@@ -59,80 +58,85 @@ struct LoginView: View {
                 .padding(.bottom, 40)
                 
                 // Title
-                Text("Pocket Balance")
+                Text("Welcome Back")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
                 
                 // Subtitle
-                Text("Manage your finances with ease")
+                Text("Sign in to continue")
                     .font(.system(size: 16, weight: .regular))
                     .foregroundColor(.secondary)
                     .padding(.top, 8)
                 
                 Spacer()
-                    .frame(height: 36)
-
-                // Unified entry field + Continue, and compact provider row
-                VStack(spacing: 14) {
-                    TextField("Phone or email", text: $identifier)
-                        .font(.system(size: 17))
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled(true)
-                        .padding()
-                        .frame(height: 56)
-                        .background(Color(UIColor.secondarySystemGroupedBackground))
-                        .cornerRadius(16)
-
-                    Button(action: {
-                        let value = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if value.contains("@") {
-                            emailSheetIsSignUp = false
-                            showEmailLogin = true
-                        } else {
-                            showPhoneLogin = true
+                    .frame(height: 60)
+                
+                // Login Options
+                VStack(spacing: 16) {
+                    // Apple Sign-In
+                    SignInWithAppleButton(
+                        onRequest: { request in
+                            request.requestedScopes = [.fullName, .email]
+                        },
+                        onCompletion: { result in
+                            handleAppleSignIn(result)
                         }
+                    )
+                    .signInWithAppleButtonStyle(.black)
+                    .frame(height: 56)
+                    .cornerRadius(28)
+                    
+                    // Phone Number Login
+                    Button(action: {
+                        showPhoneLogin = true
                     }) {
-                        Text("Continue")
-                            .font(.system(size: 17, weight: .semibold))
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .foregroundColor(.white)
-                            .background(Color.green)
-                            .cornerRadius(28)
+                        HStack {
+                            Image(systemName: "phone.fill")
+                                .font(.system(size: 18))
+                            Text("Continue with Phone")
+                                .font(.system(size: 17, weight: .semibold))
+                        }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color.blue)
+                        .cornerRadius(28)
+                    }
+                    
+                    // Email - Log In
+                    Button(action: {
+                        emailSheetIsSignUp = false
+                        showEmailLogin = true
+                    }) {
+                        HStack {
+                            Image(systemName: "envelope")
+                                .font(.system(size: 18))
+                            Text("Log In with Email")
+                                .font(.system(size: 17, weight: .semibold))
+                        }
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(Color(UIColor.secondarySystemGroupedBackground))
+                        .cornerRadius(14)
                     }
 
-                    VStack(spacing: 10) {
-                        Text("Sign in with")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.secondary)
-                        HStack(spacing: 20) {
-                            // Apple (compact)
-                            SignInWithAppleButton(
-                                onRequest: { request in
-                                    request.requestedScopes = [.fullName, .email]
-                                },
-                                onCompletion: { result in
-                                    handleAppleSignIn(result)
-                                }
-                            )
-                            .signInWithAppleButtonStyle(.black)
-                            .frame(width: 56, height: 56)
-                            .clipShape(Circle())
-
-                            // Google (compact)
-                            Button(action: { Task { await authState.signInWithGoogle() } }) {
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.white)
-                                        .frame(width: 56, height: 56)
-                                        .overlay(Circle().stroke(Color.gray.opacity(0.3), lineWidth: 1))
-                                    Image(systemName: "g.circle.fill")
-                                        .font(.system(size: 28))
-                                        .foregroundColor(.red)
-                                }
-                            }
+                    // Email - Create Account
+                    Button(action: {
+                        emailSheetIsSignUp = true
+                        showEmailLogin = true
+                    }) {
+                        HStack {
+                            Image(systemName: "person.badge.plus")
+                                .font(.system(size: 18))
+                            Text("Create Account")
+                                .font(.system(size: 17, weight: .semibold))
                         }
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(Color.blue)
+                        .cornerRadius(14)
                     }
                 }
                 .padding(.horizontal, 32)
@@ -412,9 +416,13 @@ struct EmailLoginSheet: View {
     @State private var password: String = ""
     @State private var confirmPassword: String = ""
     @State private var isSignUp: Bool = false
-    var initialIsSignUp: Bool = false
-    
     let onEmailConfirmationNeeded: (String) -> Void
+    
+    // Use init to set the @State so the correct mode appears immediately
+    init(initialIsSignUp: Bool = false, onEmailConfirmationNeeded: @escaping (String) -> Void) {
+        self._isSignUp = State(initialValue: initialIsSignUp)
+        self.onEmailConfirmationNeeded = onEmailConfirmationNeeded
+    }
     
     private var isValidEmail: Bool {
         email.contains("@") && email.contains(".") && email.count > 5
@@ -704,9 +712,6 @@ struct EmailLoginSheet: View {
                         dismiss()
                     }
                 }
-            }
-            .onAppear {
-                isSignUp = initialIsSignUp
             }
         }
     }

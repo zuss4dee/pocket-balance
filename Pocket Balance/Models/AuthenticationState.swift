@@ -265,30 +265,6 @@ class AuthenticationState: ObservableObject {
         }
     }
     
-    // MARK: - Google Sign-In
-    
-    @MainActor
-    func signInWithGoogle() async {
-        isLoading = true
-        errorMessage = nil
-        
-        do {
-            print("🔍 Signing in with Google")
-            // For now, we'll use a placeholder implementation
-            // In a real app, you'd integrate with Google Sign-In SDK
-            // and get the ID token to pass to Supabase
-            
-            // This is a placeholder - you'll need to implement actual Google Sign-In
-            errorMessage = "Google Sign-In not yet implemented. Please use Email or Apple Sign-In."
-            print("❌ Google Sign-In not implemented yet")
-        } catch {
-            errorMessage = "Google Sign-In failed. Please try again."
-            print("❌ Error with Google Sign-In: \(error.localizedDescription)")
-        }
-        
-        isLoading = false
-    }
-    
     // MARK: - Apple Sign-In
     
     @MainActor
