@@ -15,6 +15,7 @@ struct LoginView: View {
     @State private var emailSheetIsSignUp = false
     @State private var showEmailConfirmation = false
     @State private var confirmationEmail = ""
+    @State private var identifier: String = ""
     
     var body: some View {
         NavigationStack {
@@ -69,113 +70,69 @@ struct LoginView: View {
                     .padding(.top, 8)
                 
                 Spacer()
-                    .frame(height: 60)
-                
-                // Sign In Section
-                VStack(spacing: 20) {
-                    Text("Sign In")
-                        .font(.system(size: 24, weight: .bold))
-                        .foregroundColor(.primary)
-                    
-                    VStack(spacing: 12) {
-                        // Apple Sign-In
-                        SignInWithAppleButton(
-                            onRequest: { request in
-                                request.requestedScopes = [.fullName, .email]
-                            },
-                            onCompletion: { result in
-                                handleAppleSignIn(result)
-                            }
-                        )
-                        .signInWithAppleButtonStyle(.black)
-                        .frame(height: 50)
-                        .cornerRadius(25)
-                        
-                        // Google Sign-In
-                        Button(action: {
-                            Task {
-                                await authState.signInWithGoogle()
-                            }
-                        }) {
-                            HStack {
-                                Image(systemName: "globe")
-                                    .font(.system(size: 18))
-                                Text("Continue with Google")
-                                    .font(.system(size: 17, weight: .semibold))
-                            }
-                            .foregroundColor(.primary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(Color.white)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 25)
-                                    .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                            )
-                            .cornerRadius(25)
-                        }
-                        
-                        // Email Sign-In
-                        Button(action: {
+                    .frame(height: 36)
+
+                // Unified entry field + Continue, and compact provider row
+                VStack(spacing: 14) {
+                    TextField("Phone or email", text: $identifier)
+                        .font(.system(size: 17))
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled(true)
+                        .padding()
+                        .frame(height: 56)
+                        .background(Color(UIColor.secondarySystemGroupedBackground))
+                        .cornerRadius(16)
+
+                    Button(action: {
+                        let value = identifier.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if value.contains("@") {
                             emailSheetIsSignUp = false
                             showEmailLogin = true
-                        }) {
-                            HStack {
-                                Image(systemName: "envelope")
-                                    .font(.system(size: 18))
-                                Text("Sign In with Email")
-                                    .font(.system(size: 17, weight: .semibold))
-                            }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(Color.blue)
-                            .cornerRadius(25)
-                        }
-                        
-                        // Phone Sign-In
-                        Button(action: {
+                        } else {
                             showPhoneLogin = true
-                        }) {
-                            HStack {
-                                Image(systemName: "phone")
-                                    .font(.system(size: 18))
-                                Text("Sign In with Phone")
-                                    .font(.system(size: 17, weight: .semibold))
-                            }
-                            .foregroundColor(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 50)
-                            .background(Color.green)
-                            .cornerRadius(25)
                         }
-                    }
-                }
-                .padding(.horizontal, 32)
-                
-                Spacer()
-                    .frame(height: 40)
-                
-                // Create Account Section
-                VStack(spacing: 20) {
-                    Text("New to Pocket Balance?")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundColor(.secondary)
-                    
-                    Button(action: {
-                        emailSheetIsSignUp = true
-                        showEmailLogin = true
                     }) {
-                        HStack {
-                            Image(systemName: "person.badge.plus")
-                                .font(.system(size: 18))
-                            Text("Create Account")
-                                .font(.system(size: 17, weight: .semibold))
+                        Text("Continue")
+                            .font(.system(size: 17, weight: .semibold))
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .foregroundColor(.white)
+                            .background(Color.green)
+                            .cornerRadius(28)
+                    }
+
+                    VStack(spacing: 10) {
+                        Text("Sign in with")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.secondary)
+                        HStack(spacing: 20) {
+                            // Apple (compact)
+                            SignInWithAppleButton(
+                                onRequest: { request in
+                                    request.requestedScopes = [.fullName, .email]
+                                },
+                                onCompletion: { result in
+                                    handleAppleSignIn(result)
+                                }
+                            )
+                            .signInWithAppleButtonStyle(.black)
+                            .frame(width: 56, height: 56)
+                            .clipShape(Circle())
+
+                            // Google (compact)
+                            Button(action: { Task { await authState.signInWithGoogle() } }) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color.white)
+                                        .frame(width: 56, height: 56)
+                                        .overlay(Circle().stroke(Color.gray.opacity(0.3), lineWidth: 1))
+                                    Image(systemName: "g.circle.fill")
+                                        .font(.system(size: 28))
+                                        .foregroundColor(.red)
+                                }
+                            }
                         }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 50)
-                        .background(Color.purple)
-                        .cornerRadius(25)
                     }
                 }
                 .padding(.horizontal, 32)
