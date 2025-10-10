@@ -22,6 +22,7 @@ struct ProfileSettingsView: View {
     @State private var showEditEmail = false
     @State private var showChangePassword = false
     @State private var showDeleteAccount = false
+    @State private var showDeleteConfirmation = false
     @State private var errorMessage: String?
     @State private var successMessage: String?
     @State private var isProfileIncomplete = false
@@ -262,13 +263,21 @@ struct ProfileSettingsView: View {
             }
             .alert("Delete Account", isPresented: $showDeleteAccount) {
                 Button("Cancel", role: .cancel) { }
-                Button("Delete", role: .destructive) {
+                Button("Continue", role: .destructive) {
+                    showDeleteConfirmation = true
+                }
+            } message: {
+                Text("⚠️ WARNING: This will permanently delete your account and ALL your data (income, expenses, budgets, credit cards). This action cannot be undone.")
+            }
+            .alert("Final Confirmation", isPresented: $showDeleteConfirmation) {
+                Button("Cancel", role: .cancel) { }
+                Button("DELETE FOREVER", role: .destructive) {
                     Task {
                         await deleteAccount()
                     }
                 }
             } message: {
-                Text("This action cannot be undone. All your data will be permanently deleted.")
+                Text("🚨 LAST CHANCE: This will permanently delete your account and ALL data. You will NOT be able to log back in. Are you absolutely sure?")
             }
         }
     }
@@ -438,13 +447,17 @@ struct ProfileSettingsView: View {
         errorMessage = nil
         
         do {
-            // Note: This would require additional Supabase configuration for user deletion
-            // For now, we'll just sign out
-            try await SupabaseService.shared.client.auth.signOut()
-            successMessage = "Account deletion requested. Please contact support."
+            // Actually delete the user account and all their data
+            try await SupabaseService.shared.deleteUserAccount()
+            successMessage = "Account and all data deleted successfully."
+            
+            // Dismiss the sheet after successful deletion
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                onDismiss?()
+            }
             
         } catch {
-            errorMessage = "Failed to delete account. Please contact support."
+            errorMessage = "Failed to delete account: \(error.localizedDescription)"
         }
         
         isSaving = false

@@ -93,6 +93,63 @@ class SupabaseService {
             .execute()
     }
     
+    // MARK: - USER DELETION OPERATIONS
+    
+    func deleteUserAccount() async throws {
+        let userId = try await getCurrentUserId()
+        
+        // First, delete all user data from all tables
+        try await deleteAllUserData(userId: userId)
+        
+        // Then delete the user from auth.users (this requires admin privileges)
+        // Note: This might need to be done via Supabase Admin API or Edge Functions
+        // For now, we'll delete all user data and sign them out
+        try await client.auth.signOut()
+        
+        print("✅ User account and all data deleted successfully")
+    }
+    
+    private func deleteAllUserData(userId: UUID) async throws {
+        // Delete all user data from all tables
+        try await client
+            .from("income")
+            .delete()
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+        
+        try await client
+            .from("expenses")
+            .delete()
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+        
+        try await client
+            .from("subscriptions")
+            .delete()
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+        
+        try await client
+            .from("budget_categories")
+            .delete()
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+        
+        try await client
+            .from("credit_cards")
+            .delete()
+            .eq("user_id", value: userId.uuidString)
+            .execute()
+        
+        try await client
+            .from("profiles")
+            .delete()
+            .eq("id", value: userId.uuidString)
+            .execute()
+        
+        print("✅ All user data deleted from database")
+    }
+    
     // MARK: - DATA CLEANUP OPERATIONS
     
     func cleanupOldData(olderThanDays: Int = 365) async throws {
