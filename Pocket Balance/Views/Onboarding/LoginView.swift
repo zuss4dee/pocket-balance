@@ -423,6 +423,65 @@ struct EmailLoginSheet: View {
                 Text(isSignUp ? "Create Account" : "Sign In")
                     .font(.system(size: 24, weight: .bold))
                 
+                // Instructions for account creation
+                if isSignUp {
+                    VStack(spacing: 12) {
+                        Text("Get started with Pocket Balance")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        VStack(spacing: 8) {
+                            HStack(spacing: 12) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.system(size: 14))
+                                Text("Track your income and expenses")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                            }
+                            
+                            HStack(spacing: 12) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.system(size: 14))
+                                Text("Set budgets and financial goals")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                            }
+                            
+                            HStack(spacing: 12) {
+                                Image(systemName: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                                    .font(.system(size: 14))
+                                Text("Monitor your financial health")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                            }
+                        }
+                        .padding(.horizontal, 20)
+                    }
+                    .padding(.vertical, 16)
+                } else {
+                    // Instructions for sign in
+                    VStack(spacing: 12) {
+                        Text("Welcome back!")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                        
+                        Text("Sign in to access your financial dashboard and continue managing your money.")
+                            .font(.system(size: 14))
+                            .foregroundColor(.secondary)
+                            .multilineTextAlignment(.center)
+                            .padding(.horizontal, 20)
+                    }
+                    .padding(.vertical, 16)
+                }
+                
                 VStack(spacing: 16) {
                     // Email Field
                     VStack(alignment: .leading, spacing: 4) {
@@ -477,6 +536,40 @@ struct EmailLoginSheet: View {
                     }
                 }
                 .padding(.horizontal, 20)
+                
+                // Password requirements for signup
+                if isSignUp {
+                    VStack(spacing: 8) {
+                        Text("Password Requirements:")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundColor(.secondary)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        VStack(spacing: 4) {
+                            HStack(spacing: 8) {
+                                Image(systemName: password.count >= 6 ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(password.count >= 6 ? .green : .secondary)
+                                    .font(.system(size: 12))
+                                Text("At least 6 characters")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                            }
+                            
+                            HStack(spacing: 8) {
+                                Image(systemName: passwordsMatch ? "checkmark.circle.fill" : "circle")
+                                    .foregroundColor(passwordsMatch ? .green : .secondary)
+                                    .font(.system(size: 12))
+                                Text("Passwords must match")
+                                    .font(.system(size: 12))
+                                    .foregroundColor(.secondary)
+                                Spacer()
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                }
                 
                 Spacer()
                 
