@@ -148,7 +148,7 @@ struct ContentView: View {
                 await appData.loadAllData()
             }
         }
-        .onReceive(NotificationCenter.default.publisher(for: .NSApplicationDidBecomeActive)) { _ in
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
             // Reload data when app becomes active (in case data was updated elsewhere)
             Task {
                 print("🔄 App became active - refreshing data...")

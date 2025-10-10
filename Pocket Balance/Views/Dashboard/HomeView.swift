@@ -147,137 +147,152 @@ struct HomeView: View {
         totalIncome - totalExpenses - totalSubscriptions
     }
     
+    // MARK: - View Components
+    
+    private var greetingHeader: some View {
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(greeting())
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.secondary)
+                
+                if isLoadingUserName {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                } else {
+                    Text(userFullName)
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(.primary)
+                }
+            }
+            
+            Spacer()
+            
+            // Refresh indicator
+            if isRefreshing {
+                ProgressView()
+                    .scaleEffect(0.8)
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+    }
+    
+    private var balanceCard: some View {
+        VStack(spacing: 8) {
+            Text("Your Balance")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(1)
+            
+            Text(remainingBalance.formatAsShortCurrency())
+                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .foregroundColor(remainingBalance >= 0 ? .green : .red)
+            
+            Text(remainingBalance >= 0 ? "Available to spend" : "Over budget")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(remainingBalance >= 0 ? .green.opacity(0.8) : .red.opacity(0.8))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 32)
+    }
+    
+    private var balanceCardWithBackground: some View {
+        balanceCard
+            .padding(.horizontal, 20)
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(remainingBalance >= 0 ? Color.green.opacity(0.08) : Color.red.opacity(0.08))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(remainingBalance >= 0 ? Color.green.opacity(0.2) : Color.red.opacity(0.2), lineWidth: 1)
+            )
+            .padding(.horizontal, 20)
+    }
+    
+    private var sectionDivider: some View {
+        VStack(spacing: 6) {
+            Divider()
+                .padding(.horizontal, 20)
+            
+            Text("BREAKDOWN")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .tracking(1)
+        }
+        .padding(.vertical, 8)
+    }
+    
+    private var dashboardCards: some View {
+        VStack(spacing: 12) {
+            // Income Card
+            Button(action: {
+                if incomes.isEmpty {
+                    showAddIncome = true
+                } else {
+                    showIncomesList = true
+                }
+            }) {
+                DashboardCardView(
+                    title: "Total Income",
+                    metric: totalIncome.formatAsShortCurrency(),
+                    context: incomes.isEmpty ? "Tap to add income" : "\(incomes.count) income source\(incomes.count == 1 ? "" : "s") • Tap to view",
+                    iconSystemName: "arrow.up.circle",
+                    iconColor: .green
+                )
+            }
+            .buttonStyle(.plain)
+            
+            // Primary Monthly Expenses Card
+            Button(action: {
+                if expenses.isEmpty {
+                    showAddExpense = true
+                } else {
+                    showExpensesList = true
+                }
+            }) {
+                DashboardCardView(
+                    title: "Primary Monthly Expenses",
+                    metric: totalExpenses.formatAsShortCurrency(),
+                    context: expenses.isEmpty ? "Tap to add expenses" : "\(expenses.count) expense\(expenses.count == 1 ? "" : "s") • Tap to view",
+                    iconSystemName: "arrow.down.circle",
+                    iconColor: .red
+                )
+            }
+            .buttonStyle(.plain)
+            
+            // Recurring Payments Card
+            Button(action: {
+                if subscriptions.isEmpty {
+                    showAddSubscription = true
+                } else {
+                    showSubscriptionsList = true
+                }
+            }) {
+                DashboardCardView(
+                    title: "Recurring Payments",
+                    metric: totalSubscriptions.formatAsShortCurrency(),
+                    context: subscriptions.isEmpty ? "Tap to add subscriptions" : "\(subscriptions.count) subscription\(subscriptions.count == 1 ? "" : "s") • Tap to view",
+                    iconSystemName: "repeat.circle",
+                    iconColor: .purple
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 40)
+    }
+    
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 32) {
-                    // Greeting Header
-                    HStack(alignment: .center, spacing: 16) {
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(greeting())
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(.secondary)
-                            
-                            if isLoadingUserName {
-                                ProgressView()
-                                    .scaleEffect(0.8)
-                            } else {
-                                Text(userFullName)
-                                    .font(.system(size: 28, weight: .bold, design: .rounded))
-                                    .foregroundStyle(.primary)
-                            }
-                        }
-                        
-                        Spacer()
-                        
-                        // Refresh indicator
-                        if isRefreshing {
-                            ProgressView()
-                                .scaleEffect(0.8)
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                    
-                    // Remaining Balance - Hero Card
-                    VStack(spacing: 8) {
-                        Text("Your Balance")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .textCase(.uppercase)
-                            .tracking(1)
-                        
-                        Text(remainingBalance.formatAsShortCurrency())
-                            .font(.system(size: 42, weight: .bold, design: .rounded))
-                            .foregroundColor(remainingBalance >= 0 ? .green : .red)
-                        
-                        Text(remainingBalance >= 0 ? "Available to spend" : "Over budget")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundStyle(remainingBalance >= 0 ? .green.opacity(0.8) : .red.opacity(0.8))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 32)
-                    .padding(.horizontal, 20)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(remainingBalance >= 0 ? Color.green.opacity(0.08) : Color.red.opacity(0.08))
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .stroke(remainingBalance >= 0 ? Color.green.opacity(0.2) : Color.red.opacity(0.2), lineWidth: 1)
-                    )
-                    .padding(.horizontal, 20)
-                    
-                    // Section Divider
-                    VStack(spacing: 6) {
-                        Divider()
-                            .padding(.horizontal, 20)
-                        
-                        Text("BREAKDOWN")
-                            .font(.system(size: 11, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .tracking(1)
-                    }
-                    .padding(.vertical, 8)
-                    
-                    // Dashboard Cards
-                    VStack(spacing: 12) {
-                        // Income Card
-                        Button(action: {
-                            if incomes.isEmpty {
-                                showAddIncome = true
-                            } else {
-                                showIncomesList = true
-                            }
-                        }) {
-                            DashboardCardView(
-                                title: "Total Income",
-                                metric: totalIncome.formatAsShortCurrency(),
-                                context: incomes.isEmpty ? "Tap to add income" : "\(incomes.count) income source\(incomes.count == 1 ? "" : "s") • Tap to view",
-                                iconSystemName: "arrow.up.circle",
-                                iconColor: .green
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        
-                        // Primary Monthly Expenses Card
-                        Button(action: {
-                            if expenses.isEmpty {
-                                showAddExpense = true
-                            } else {
-                                showExpensesList = true
-                            }
-                        }) {
-                            DashboardCardView(
-                                title: "Primary Monthly Expenses",
-                                metric: totalExpenses.formatAsShortCurrency(),
-                                context: expenses.isEmpty ? "Tap to add expenses" : "\(expenses.count) expense\(expenses.count == 1 ? "" : "s") • Tap to view",
-                                iconSystemName: "arrow.down.circle",
-                                iconColor: .red
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        
-                        // Recurring Payments Card
-                        Button(action: {
-                            if subscriptions.isEmpty {
-                                showAddSubscription = true
-                            } else {
-                                showSubscriptionsList = true
-                            }
-                        }) {
-                            DashboardCardView(
-                                title: "Recurring Payments",
-                                metric: totalSubscriptions.formatAsShortCurrency(),
-                                context: subscriptions.isEmpty ? "Tap to add subscriptions" : "\(subscriptions.count) subscription\(subscriptions.count == 1 ? "" : "s") • Tap to view",
-                                iconSystemName: "repeat.circle",
-                                iconColor: .purple
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 40)
+                    greetingHeader
+                    balanceCardWithBackground
+                    sectionDivider
+                    dashboardCards
                 }
             }
             .background(Color(UIColor.systemGroupedBackground))
