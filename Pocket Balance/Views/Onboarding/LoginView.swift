@@ -12,6 +12,7 @@ struct LoginView: View {
     @EnvironmentObject var authState: AuthenticationState
     @State private var showPhoneLogin = false
     @State private var showEmailLogin = false
+    @State private var emailSheetIsSignUp = false
     @State private var showEmailConfirmation = false
     @State private var confirmationEmail = ""
     
@@ -102,21 +103,40 @@ struct LoginView: View {
                         .cornerRadius(28)
                     }
                     
-                    // Email Login
+                    // Email - Log In
                     Button(action: {
+                        emailSheetIsSignUp = false
                         showEmailLogin = true
                     }) {
                         HStack {
-                            Image(systemName: "envelope.fill")
+                            Image(systemName: "envelope")
                                 .font(.system(size: 18))
-                            Text("Continue with Email")
+                            Text("Log In with Email")
+                                .font(.system(size: 17, weight: .semibold))
+                        }
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .background(Color(UIColor.secondarySystemGroupedBackground))
+                        .cornerRadius(14)
+                    }
+
+                    // Email - Create Account
+                    Button(action: {
+                        emailSheetIsSignUp = true
+                        showEmailLogin = true
+                    }) {
+                        HStack {
+                            Image(systemName: "person.badge.plus")
+                                .font(.system(size: 18))
+                            Text("Create Account")
                                 .font(.system(size: 17, weight: .semibold))
                         }
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.green)
-                        .cornerRadius(28)
+                        .frame(height: 48)
+                        .background(Color.blue)
+                        .cornerRadius(14)
                     }
                 }
                 .padding(.horizontal, 32)
@@ -138,6 +158,7 @@ struct LoginView: View {
             }
             .sheet(isPresented: $showEmailLogin) {
                 EmailLoginSheet(
+                    initialIsSignUp: emailSheetIsSignUp,
                     onEmailConfirmationNeeded: { email in
                         confirmationEmail = email
                         showEmailConfirmation = true
@@ -395,6 +416,7 @@ struct EmailLoginSheet: View {
     @State private var password: String = ""
     @State private var confirmPassword: String = ""
     @State private var isSignUp: Bool = false
+    var initialIsSignUp: Bool = false
     
     let onEmailConfirmationNeeded: (String) -> Void
     
@@ -686,6 +708,9 @@ struct EmailLoginSheet: View {
                         dismiss()
                     }
                 }
+            }
+            .onAppear {
+                isSignUp = initialIsSignUp
             }
         }
     }
