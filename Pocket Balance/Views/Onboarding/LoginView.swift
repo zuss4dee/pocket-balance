@@ -20,6 +20,7 @@ struct LoginView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 Spacer()
+                    .frame(height: 60)
                 
                 // App Logo/Mascot
                 ZStack {
@@ -58,18 +59,10 @@ struct LoginView: View {
                 .padding(.bottom, 40)
                 
                 // Title
-                Text("Welcome Back")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                Text("Create an account")
+                    .font(.system(size: 32, weight: .bold))
                     .foregroundColor(.primary)
-                
-                // Subtitle
-                Text("Sign in to continue")
-                    .font(.system(size: 16, weight: .regular))
-                    .foregroundColor(.secondary)
-                    .padding(.top, 8)
-                
-                Spacer()
-                    .frame(height: 60)
+                    .padding(.bottom, 40)
                 
                 // Login Options
                 VStack(spacing: 16) {
@@ -82,9 +75,34 @@ struct LoginView: View {
                             handleAppleSignIn(result)
                         }
                     )
-                    .signInWithAppleButtonStyle(.black)
+                    .signInWithAppleButtonStyle(.white)
                     .frame(height: 56)
                     .cornerRadius(28)
+                    
+                    // Google Sign-In
+                    Button(action: {
+                        // Handle Google Sign-In
+                    }) {
+                        HStack {
+                            // Official Google logo
+                            Image("GoogleLogo")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 20, height: 20)
+                            
+                            Text("Continue with Google")
+                                .font(.system(size: 17, weight: .medium))
+                        }
+                        .foregroundColor(.primary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 28)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                        .cornerRadius(28)
+                    }
                     
                     // Phone Number Login
                     Button(action: {
@@ -92,64 +110,64 @@ struct LoginView: View {
                     }) {
                         HStack {
                             Image(systemName: "phone.fill")
-                                .font(.system(size: 18))
-                            Text("Continue with Phone")
-                                .font(.system(size: 17, weight: .semibold))
-                        }
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.blue)
-                        .cornerRadius(28)
-                    }
-                    
-                    // Email - Log In
-                    Button(action: {
-                        showEmailSignIn = true
-                    }) {
-                        HStack {
-                            Image(systemName: "envelope")
-                                .font(.system(size: 18))
-                            Text("Log In with Email")
-                                .font(.system(size: 17, weight: .semibold))
+                                .font(.system(size: 18, weight: .medium))
+                            Text("Continue with Phone Number")
+                                .font(.system(size: 17, weight: .medium))
                         }
                         .foregroundColor(.primary)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(Color(UIColor.secondarySystemGroupedBackground))
-                        .cornerRadius(14)
+                        .frame(height: 56)
+                        .background(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 28)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                        .cornerRadius(28)
                     }
-
+                    
                     // Email - Create Account
                     Button(action: {
                         showEmailSignUp = true
                     }) {
                         HStack {
-                            Image(systemName: "person.badge.plus")
-                                .font(.system(size: 18))
-                            Text("Create Account")
-                                .font(.system(size: 17, weight: .semibold))
+                            Image(systemName: "envelope")
+                                .font(.system(size: 18, weight: .medium))
+                            Text("Continue with Email")
+                                .font(.system(size: 17, weight: .medium))
                         }
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                         .frame(maxWidth: .infinity)
-                        .frame(height: 48)
-                        .background(Color.blue)
-                        .cornerRadius(14)
+                        .frame(height: 56)
+                        .background(Color.white)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 28)
+                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                        )
+                        .cornerRadius(28)
                     }
                 }
                 .padding(.horizontal, 32)
                 
                 Spacer()
+                    .frame(height: 30)
                 
-                // Terms & Privacy
-                Text("By continuing, you agree to our Terms of Service and Privacy Policy")
-                    .font(.system(size: 13))
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 40)
-                    .padding(.bottom, 40)
+                // Already have an account link
+                HStack {
+                    Text("Already have an account?")
+                        .font(.system(size: 16))
+                        .foregroundColor(.secondary)
+                    
+                    Button(action: {
+                        showEmailSignIn = true
+                    }) {
+                        Text("Log in")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundColor(.blue)
+                    }
+                }
+                .padding(.bottom, 40)
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color.white)
             .sheet(isPresented: $showPhoneLogin) {
                 PhoneLoginSheet()
                     .environmentObject(authState)
@@ -478,6 +496,7 @@ struct EmailConfirmationSheet: View {
         }
     }
 }
+
 
 #Preview {
     LoginView()
