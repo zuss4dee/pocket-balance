@@ -11,8 +11,8 @@ import AuthenticationServices
 struct LoginView: View {
     @EnvironmentObject var authState: AuthenticationState
     @State private var showPhoneLogin = false
-    @State private var showEmailLogin = false
-    @State private var emailSheetIsSignUp = false
+    @State private var showEmailSignIn = false
+    @State private var showEmailSignUp = false
     @State private var showEmailConfirmation = false
     @State private var confirmationEmail = ""
     
@@ -105,8 +105,7 @@ struct LoginView: View {
                     
                     // Email - Log In
                     Button(action: {
-                        emailSheetIsSignUp = false
-                        showEmailLogin = true
+                        showEmailSignIn = true
                     }) {
                         HStack {
                             Image(systemName: "envelope")
@@ -123,8 +122,7 @@ struct LoginView: View {
 
                     // Email - Create Account
                     Button(action: {
-                        emailSheetIsSignUp = true
-                        showEmailLogin = true
+                        showEmailSignUp = true
                     }) {
                         HStack {
                             Image(systemName: "person.badge.plus")
@@ -156,14 +154,15 @@ struct LoginView: View {
                 PhoneLoginSheet()
                     .environmentObject(authState)
             }
-            .sheet(isPresented: $showEmailLogin) {
-                EmailLoginSheet(
-                    initialIsSignUp: emailSheetIsSignUp,
-                    onEmailConfirmationNeeded: { email in
-                        confirmationEmail = email
-                        showEmailConfirmation = true
-                    }
-                )
+            .sheet(isPresented: $showEmailSignIn) {
+                EmailSignInView()
+                    .environmentObject(authState)
+            }
+            .sheet(isPresented: $showEmailSignUp) {
+                EmailSignUpView(onEmailConfirmationNeeded: { email in
+                    confirmationEmail = email
+                    showEmailConfirmation = true
+                })
                 .environmentObject(authState)
             }
             .sheet(isPresented: $showEmailConfirmation) {
@@ -407,316 +406,6 @@ struct OTPLoginSheet: View {
     }
 }
 
-// MARK: - Email Login Sheet
-
-struct EmailLoginSheet: View {
-    @Environment(\.dismiss) var dismiss
-    @EnvironmentObject var authState: AuthenticationState
-    @State private var email: String = ""
-    @State private var password: String = ""
-    @State private var confirmPassword: String = ""
-    @State private var isSignUp: Bool = false
-    let onEmailConfirmationNeeded: (String) -> Void
-    
-    // Use init to set the @State so the correct mode appears immediately
-    init(initialIsSignUp: Bool = false, onEmailConfirmationNeeded: @escaping (String) -> Void) {
-        self._isSignUp = State(initialValue: initialIsSignUp)
-        self.onEmailConfirmationNeeded = onEmailConfirmationNeeded
-    }
-    
-    private var isValidEmail: Bool {
-        email.contains("@") && email.contains(".") && email.count > 5
-    }
-    
-    private var isValidPassword: Bool {
-        password.count >= 6
-    }
-    
-    private var passwordsMatch: Bool {
-        !isSignUp || password == confirmPassword
-    }
-    
-    private var canSubmit: Bool {
-        isValidEmail && isValidPassword && passwordsMatch
-    }
-    
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                Spacer()
-                    .frame(height: 20)
-                
-                Text(isSignUp ? "Create Account" : "Sign In")
-                    .font(.system(size: 24, weight: .bold))
-                
-                // Instructions for account creation
-                if isSignUp {
-                    VStack(spacing: 12) {
-                        Text("Get started with Pocket Balance")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                        
-                        VStack(spacing: 8) {
-                            HStack(spacing: 12) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                                    .font(.system(size: 14))
-                                Text("Track your income and expenses")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                            }
-                            
-                            HStack(spacing: 12) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                                    .font(.system(size: 14))
-                                Text("Set budgets and financial goals")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                            }
-                            
-                            HStack(spacing: 12) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
-                                    .font(.system(size: 14))
-                                Text("Monitor your financial health")
-                                    .font(.system(size: 14))
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                    }
-                    .padding(.vertical, 16)
-                } else {
-                    // Instructions for sign in
-                    VStack(spacing: 12) {
-                        Text("Welcome back!")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                        
-                        Text("Sign in to access your financial dashboard and continue managing your money.")
-                            .font(.system(size: 14))
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 20)
-                    }
-                    .padding(.vertical, 16)
-                }
-                
-                VStack(spacing: 16) {
-                    // Email Field
-                    VStack(alignment: .leading, spacing: 4) {
-                        TextField("Email", text: $email)
-                            .font(.system(size: 17))
-                            .keyboardType(.emailAddress)
-                            .autocapitalization(.none)
-                            .padding()
-                            .frame(height: 56)
-                            .background(Color(UIColor.secondarySystemGroupedBackground))
-                            .cornerRadius(12)
-                        
-                        if !email.isEmpty && !isValidEmail {
-                            Text("Please enter a valid email address")
-                                .font(.system(size: 12))
-                                .foregroundColor(.red)
-                        }
-                    }
-                    
-                    // Password Field
-                    VStack(alignment: .leading, spacing: 4) {
-                        SecureField("Password", text: $password)
-                            .font(.system(size: 17))
-                            .padding()
-                            .frame(height: 56)
-                            .background(Color(UIColor.secondarySystemGroupedBackground))
-                            .cornerRadius(12)
-                        
-                        if !password.isEmpty && !isValidPassword {
-                            Text("Password must be at least 6 characters")
-                                .font(.system(size: 12))
-                                .foregroundColor(.red)
-                        }
-                    }
-                    
-                    // Confirm Password Field (only for signup)
-                    if isSignUp {
-                        VStack(alignment: .leading, spacing: 4) {
-                            SecureField("Confirm Password", text: $confirmPassword)
-                                .font(.system(size: 17))
-                                .padding()
-                                .frame(height: 56)
-                                .background(Color(UIColor.secondarySystemGroupedBackground))
-                                .cornerRadius(12)
-                            
-                            if !confirmPassword.isEmpty && !passwordsMatch {
-                                Text("Passwords do not match")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.red)
-                            }
-                        }
-                    }
-                }
-                .padding(.horizontal, 20)
-                
-                // Password requirements for signup
-                if isSignUp {
-                    VStack(spacing: 8) {
-                        Text("Password Requirements:")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundColor(.secondary)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                        
-                        VStack(spacing: 4) {
-                            HStack(spacing: 8) {
-                                Image(systemName: password.count >= 6 ? "checkmark.circle.fill" : "circle")
-                                    .foregroundColor(password.count >= 6 ? .green : .secondary)
-                                    .font(.system(size: 12))
-                                Text("At least 6 characters")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                            }
-                            
-                            HStack(spacing: 8) {
-                                Image(systemName: passwordsMatch ? "checkmark.circle.fill" : "circle")
-                                    .foregroundColor(passwordsMatch ? .green : .secondary)
-                                    .font(.system(size: 12))
-                                Text("Passwords must match")
-                                    .font(.system(size: 12))
-                                    .foregroundColor(.secondary)
-                                Spacer()
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                }
-                
-                // Additional helpful information for sign in
-                if !isSignUp {
-                    VStack(spacing: 12) {
-                        HStack(spacing: 16) {
-                            VStack(spacing: 4) {
-                                Image(systemName: "chart.line.uptrend.xyaxis")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.blue)
-                                Text("Dashboard")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            VStack(spacing: 4) {
-                                Image(systemName: "creditcard")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.green)
-                                Text("Cards")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            VStack(spacing: 4) {
-                                Image(systemName: "chart.pie")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.orange)
-                                Text("Budget")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.secondary)
-                            }
-                            
-                            VStack(spacing: 4) {
-                                Image(systemName: "person.circle")
-                                    .font(.system(size: 20))
-                                    .foregroundColor(.purple)
-                                Text("Profile")
-                                    .font(.system(size: 12, weight: .medium))
-                                    .foregroundColor(.secondary)
-                            }
-                        }
-                        .padding(.horizontal, 20)
-                        
-                        Text("Access all your financial tools in one place")
-                            .font(.system(size: 12))
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.vertical, 12)
-                }
-                
-                Spacer()
-                
-                if let errorMessage = authState.errorMessage {
-                    HStack(spacing: 8) {
-                        Image(systemName: "exclamationmark.circle.fill")
-                            .foregroundColor(.red)
-                        Text(errorMessage)
-                            .font(.system(size: 14))
-                            .foregroundColor(.red)
-                    }
-                    .padding(.horizontal, 20)
-                }
-                
-                Button(action: {
-                    Task {
-                        if isSignUp {
-                            await authState.signUpWithEmail(email: email, password: password)
-                            // Check if email confirmation is needed
-                            if authState.errorMessage?.contains("check your email") == true {
-                                onEmailConfirmationNeeded(email)
-                            }
-                        } else {
-                            await authState.signInWithEmail(email: email, password: password)
-                        }
-                        if authState.errorMessage == nil {
-                            dismiss()
-                        }
-                    }
-                }) {
-                    HStack {
-                        Text(isSignUp ? "Create Account" : "Sign In")
-                            .font(.system(size: 17, weight: .semibold))
-                        if authState.isLoading {
-                            ProgressView()
-                                .tint(.white)
-                                .padding(.leading, 8)
-                        }
-                    }
-                    .foregroundColor(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 56)
-                    .background(canSubmit ? Color.green : Color.gray.opacity(0.3))
-                    .cornerRadius(28)
-                }
-                .disabled(!canSubmit || authState.isLoading)
-                .padding(.horizontal, 20)
-                
-                Button(action: {
-                    isSignUp.toggle()
-                }) {
-                    Text(isSignUp ? "Already have an account? Sign In" : "Don't have an account? Sign Up")
-                        .font(.system(size: 15, weight: .medium))
-                        .foregroundColor(.blue)
-                }
-                .padding(.bottom, 30)
-            }
-            .background(Color(UIColor.systemGroupedBackground))
-            .navigationTitle("Email")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
-            }
-        }
-    }
-}
-
 // MARK: - Email Confirmation Sheet
 
 struct EmailConfirmationSheet: View {
@@ -794,4 +483,3 @@ struct EmailConfirmationSheet: View {
     LoginView()
         .environmentObject(AuthenticationState())
 }
-

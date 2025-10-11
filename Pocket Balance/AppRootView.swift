@@ -12,6 +12,7 @@ struct AppRootView: View {
     @State private var isCheckingAuth = true
     @State private var isAuthenticated = false
     @State private var shouldPromptProfileSetup = false
+    @StateObject private var authState = AuthenticationState()
     
     var body: some View {
         Group {
@@ -43,7 +44,7 @@ struct AppRootView: View {
                 // User is NOT logged in → Show login screen
                 LoginView()
                     .transition(.opacity)
-                    .environmentObject(AuthenticationState())
+                    .environmentObject(authState)
             }
         }
         .animation(.easeInOut(duration: 0.3), value: isAuthenticated)
