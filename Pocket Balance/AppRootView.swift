@@ -62,12 +62,20 @@ struct AppRootView: View {
         do {
             let session = try await SupabaseService.shared.client.auth.session
             
-            // If we got a session without error, user is authenticated
-            isAuthenticated = true
-            print("✅ User is authenticated: \(session.user.id)")
+            // Check if user is marked as deleted
+            if let deletedAt = session.user.userMetadata["deleted_at"] {
+                print("🚨 User account is deleted: \(deletedAt)")
+                // Sign out the deleted user
+                try await SupabaseService.shared.client.auth.signOut()
+                isAuthenticated = false
+            } else {
+                // If we got a session without error, user is authenticated
+                isAuthenticated = true
+                print("✅ User is authenticated: \(session.user.id)")
 
-            // Evaluate if we should prompt for profile completion
-            await evaluateProfileCompletion()
+                // Evaluate if we should prompt for profile completion
+                await evaluateProfileCompletion()
+            }
         } catch {
             // No session or session expired → User needs to log in
             isAuthenticated = false
@@ -83,8 +91,17 @@ struct AppRootView: View {
         // Re-check authentication without showing loading screen
         do {
             let session = try await SupabaseService.shared.client.auth.session
-            isAuthenticated = true
-            print("✅ Authentication refreshed: \(session.user.id)")
+            
+            // Check if user is marked as deleted
+            if let deletedAt = session.user.userMetadata["deleted_at"] {
+                print("🚨 User account is deleted during refresh: \(deletedAt)")
+                // Sign out the deleted user
+                try await SupabaseService.shared.client.auth.signOut()
+                isAuthenticated = false
+            } else {
+                isAuthenticated = true
+                print("✅ Authentication refreshed: \(session.user.id)")
+            }
         } catch {
             isAuthenticated = false
             print("ℹ️ No session found")
@@ -107,7 +124,7 @@ struct AppRootView: View {
                             await loadUserDataAfterSignIn()
                         }
                     case .signedOut:
-                        print("ℹ️ User signed out")
+                        print("ℹ️ User signed out - auth state change detected")
                         isAuthenticated = false
                         shouldPromptProfileSetup = false
                         // Clear any cached data when user signs out

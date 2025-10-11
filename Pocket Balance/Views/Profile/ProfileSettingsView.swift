@@ -451,6 +451,11 @@ struct ProfileSettingsView: View {
             try await SupabaseService.shared.deleteUserAccount()
             successMessage = "Account and all data deleted successfully."
             
+            // Force sign out to ensure user is logged out
+            print("🔄 Attempting to sign out user after account deletion...")
+            try await SupabaseService.shared.client.auth.signOut()
+            print("✅ User signed out successfully after account deletion")
+            
             // Dismiss the sheet after successful deletion
             DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
                 onDismiss?()

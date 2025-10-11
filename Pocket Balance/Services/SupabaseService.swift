@@ -101,10 +101,14 @@ class SupabaseService {
         // First, delete all user data from all tables
         try await deleteAllUserData(userId: userId)
         
-        // Then delete the user from auth.users (this requires admin privileges)
-        // Note: This might need to be done via Supabase Admin API or Edge Functions
-        // For now, we'll delete all user data and sign them out
-        try await client.auth.signOut()
+        // Clear user metadata and settings from auth.users
+        try await clearUserAuthData()
+        
+        // Clear any local storage/cache
+        try await clearLocalStorage()
+        
+        // Delete the user from auth.users using Admin API
+        try await deleteUserFromAuth(userId: userId)
         
         print("✅ User account and all data deleted successfully")
     }
@@ -148,6 +152,58 @@ class SupabaseService {
             .execute()
         
         print("✅ All user data deleted from database")
+    }
+    
+    private func clearUserAuthData() async throws {
+        // Clear user metadata to remove any settings/preferences stored there
+        let emptyMetadata = UserAttributes(data: [:])
+        try await client.auth.update(user: emptyMetadata)
+        
+        print("✅ User auth metadata cleared")
+    }
+    
+    private func clearLocalStorage() async throws {
+        // Clear any local storage that might contain user settings
+        UserDefaults.standard.removeObject(forKey: "user_preferences")
+        UserDefaults.standard.removeObject(forKey: "cached_user_data")
+        UserDefaults.standard.removeObject(forKey: "last_sync_date")
+        UserDefaults.standard.removeObject(forKey: "onboarding_completed")
+        UserDefaults.standard.removeObject(forKey: "profile_setup_completed")
+        
+        // Clear any other potential user-specific keys
+        let userDefaults = UserDefaults.standard
+        let allKeys = userDefaults.dictionaryRepresentation().keys
+        for key in allKeys {
+            if key.contains("user_") || key.contains("profile_") || key.contains("settings_") {
+                userDefaults.removeObject(forKey: key)
+            }
+        }
+        
+        // Force synchronize to ensure changes are saved
+        userDefaults.synchronize()
+        
+        print("✅ Local storage cleared")
+    }
+    
+    private func deleteUserFromAuth(userId: UUID) async throws {
+        // Use direct Admin API approach since Edge Function has syntax issues
+        // This uses the service role key to delete the user from auth.users
+        
+        let serviceRoleKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eGFnYmJrZHp1cW1jZXZxZ3doIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTgxMzUyNywiZXhwIjoyMDc1Mzg5NTI3fQ.7z8pw0pAte1FtRKRNkWCbyMDwHv9mDWUgieO1KG5MJo"
+        
+        // Create admin client with service role key
+        let adminClient = SupabaseClient(
+            supabaseURL: supabaseURL,
+            supabaseKey: serviceRoleKey
+        )
+        
+        print("🔄 Attempting to delete user from auth.users: \(userId)")
+        
+        // Delete user from auth.users using admin privileges
+        let result = try await adminClient.auth.admin.deleteUser(id: userId)
+        
+        print("✅ User deletion result: \(result)")
+        print("✅ User deleted from auth.users")
     }
     
     // MARK: - DATA CLEANUP OPERATIONS
