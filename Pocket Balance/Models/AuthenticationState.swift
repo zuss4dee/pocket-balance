@@ -8,6 +8,7 @@
 import Foundation
 import Combine
 import Supabase
+import GoogleSignIn
 
 enum OnboardingStep {
     case welcome
@@ -262,6 +263,49 @@ class AuthenticationState: ObservableObject {
             }
             
             print("❌ Error signing up with email: \(error.localizedDescription)")
+        }
+    }
+    
+    // MARK: - Google Sign-In
+    
+    @MainActor
+    func signInWithGoogle() async {
+        isLoading = true
+        errorMessage = nil
+        
+        do {
+            print("🔍 Starting Google Sign-In...")
+            
+            guard let presentingViewController = UIApplication.shared.windows.first?.rootViewController else {
+                throw NSError(domain: "GoogleSignIn", code: -1, userInfo: [NSLocalizedDescriptionKey: "No presenting view controller"])
+            }
+            
+            let result = try await GIDSignIn.sharedInstance.signIn(withPresenting: presentingViewController)
+            let user = result.user
+            
+            guard let idToken = user.idToken?.tokenString else {
+                throw NSError(domain: "GoogleSignIn", code: -1, userInfo: [NSLocalizedDescriptionKey: "No ID token"])
+            }
+            
+            // Sign in to Supabase with Google token (without nonce)
+            try await client.auth.signInWithIdToken(credentials: .init(provider: .google, idToken: idToken))
+            
+            // Save user's name if available
+            if let fullName = user.profile?.name {
+                self.fullName = fullName
+                let attributes = UserAttributes(data: ["full_name": .string(fullName)])
+                try await client.auth.update(user: attributes)
+            }
+            
+            isLoading = false
+            isAuthenticated = true
+            currentStep = .completed
+            print("✅ Google Sign-In successful")
+            
+        } catch {
+            isLoading = false
+            errorMessage = "Google Sign-In failed. Please try again."
+            print("❌ Error with Google Sign-In: \(error.localizedDescription)")
         }
     }
     

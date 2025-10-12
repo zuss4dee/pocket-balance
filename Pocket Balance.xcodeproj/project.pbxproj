@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		DE53EF5C2E92B0D70068FF59 /* Supabase in Frameworks */ = {isa = PBXBuildFile; productRef = DE53EF5B2E92B0D70068FF59 /* Supabase */; };
+		DE53EF942E9B22590068FF59 /* GoogleSignIn in Frameworks */ = {isa = PBXBuildFile; productRef = DE53EF932E9B22590068FF59 /* GoogleSignIn */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,6 +29,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				DE53EF5C2E92B0D70068FF59 /* Supabase in Frameworks */,
+				DE53EF942E9B22590068FF59 /* GoogleSignIn in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -71,6 +73,7 @@
 			name = "Pocket Balance";
 			packageProductDependencies = (
 				DE53EF5B2E92B0D70068FF59 /* Supabase */,
+				DE53EF932E9B22590068FF59 /* GoogleSignIn */,
 			);
 			productName = "Pocket Balance";
 			productReference = DE53EF482E92A2DF0068FF59 /* Pocket Balance.app */;
@@ -102,6 +105,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				DE53EF5A2E92B0D70068FF59 /* XCRemoteSwiftPackageReference "supabase-swift" */,
+				DE53EF922E9B22590068FF59 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = DE53EF492E92A2DF0068FF59 /* Products */;
@@ -365,6 +369,14 @@
 				minimumVersion = 2.5.1;
 			};
 		};
+		DE53EF922E9B22590068FF59 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/GoogleSignIn-iOS";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 9.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -372,6 +384,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = DE53EF5A2E92B0D70068FF59 /* XCRemoteSwiftPackageReference "supabase-swift" */;
 			productName = Supabase;
+		};
+		DE53EF932E9B22590068FF59 /* GoogleSignIn */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DE53EF922E9B22590068FF59 /* XCRemoteSwiftPackageReference "GoogleSignIn-iOS" */;
+			productName = GoogleSignIn;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

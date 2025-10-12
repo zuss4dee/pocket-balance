@@ -81,7 +81,9 @@ struct LoginView: View {
                     
                     // Google Sign-In
                     Button(action: {
-                        // Handle Google Sign-In
+                        Task {
+                            await authState.signInWithGoogle()
+                        }
                     }) {
                         HStack {
                             // Official Google logo
