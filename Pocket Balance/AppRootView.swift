@@ -173,8 +173,7 @@ struct AppRootView: View {
     private func loadUserDataAfterSignIn() async {
         // This function will be called when user signs in
         // The actual data loading will happen in ContentView.onAppear
-        // But we can add a small delay to ensure the UI is ready
-        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 seconds
+        // Removed unnecessary delay for faster performance
         print("🔄 User data loading triggered after sign in")
     }
 }

@@ -332,8 +332,7 @@ struct HomeView: View {
             }
             .task {
                 await loadUserName()
-                // Set data loading to false after a short delay to allow data to load
-                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                // Set data loading to false immediately after loading
                 isDataLoading = false
             }
             .overlay(

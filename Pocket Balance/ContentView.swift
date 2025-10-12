@@ -111,35 +111,73 @@ struct ContentView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            HomeViewWrapper()
-                .environmentObject(appData)
-                .tabItem {
-                    Image(systemName: selectedTab == 0 ? "house.fill" : "house")
-                    Text("Home")
-                }
-                .tag(0)
+            // Lazy load views only when needed
+            if selectedTab == 0 {
+                HomeViewWrapper()
+                    .environmentObject(appData)
+                    .tabItem {
+                        Image(systemName: selectedTab == 0 ? "house.fill" : "house")
+                        Text("Home")
+                    }
+                    .tag(0)
+            } else {
+                // Placeholder for performance
+                Color.clear
+                    .tabItem {
+                        Image(systemName: "house")
+                        Text("Home")
+                    }
+                    .tag(0)
+            }
             
-            BudgetViewWrapper()
-                .environmentObject(appData)
-                .tabItem {
-                    Image(systemName: selectedTab == 1 ? "chart.pie.fill" : "chart.pie")
-                    Text("Budget")
-                }
-                .tag(1)
+            if selectedTab == 1 {
+                BudgetViewWrapper()
+                    .environmentObject(appData)
+                    .tabItem {
+                        Image(systemName: selectedTab == 1 ? "chart.pie.fill" : "chart.pie")
+                        Text("Budget")
+                    }
+                    .tag(1)
+            } else {
+                Color.clear
+                    .tabItem {
+                        Image(systemName: "chart.pie")
+                        Text("Budget")
+                    }
+                    .tag(1)
+            }
             
-            CreditCardsView()
-                .tabItem {
-                    Image(systemName: selectedTab == 2 ? "creditcard.fill" : "creditcard")
-                    Text("Cards")
-                }
-                .tag(2)
+            if selectedTab == 2 {
+                CreditCardsView()
+                    .tabItem {
+                        Image(systemName: selectedTab == 2 ? "creditcard.fill" : "creditcard")
+                        Text("Cards")
+                    }
+                    .tag(2)
+            } else {
+                Color.clear
+                    .tabItem {
+                        Image(systemName: "creditcard")
+                        Text("Cards")
+                    }
+                    .tag(2)
+            }
             
-            ProfileView()
-                .tabItem {
-                    Image(systemName: selectedTab == 3 ? "person.fill" : "person")
-                    Text("Profile")
-                }
-                .tag(3)
+            if selectedTab == 3 {
+                ProfileView()
+                    .tabItem {
+                        Image(systemName: selectedTab == 3 ? "person.fill" : "person")
+                        Text("Profile")
+                    }
+                    .tag(3)
+            } else {
+                Color.clear
+                    .tabItem {
+                        Image(systemName: "person")
+                        Text("Profile")
+                    }
+                    .tag(3)
+            }
         }
         .accentColor(.blue)
         .onAppear {
@@ -149,10 +187,12 @@ struct ContentView: View {
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            // Reload data when app becomes active (in case data was updated elsewhere)
-            Task {
-                print("🔄 App became active - refreshing data...")
-                await appData.refreshData()
+            // Only refresh data if user is on the home tab (performance optimization)
+            if selectedTab == 0 {
+                Task {
+                    print("🔄 App became active - refreshing data...")
+                    await appData.refreshData()
+                }
             }
         }
     }

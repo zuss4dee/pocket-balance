@@ -16,142 +16,49 @@ struct FinancialMascotView: View {
     
     var body: some View {
         ZStack {
-            // Main orange circle (mascot)
+            // Main orange circle (mascot) - simplified
             Circle()
                 .fill(Color.orange)
                 .frame(width: size, height: size)
                 .overlay(
-                    // Eyes
-                    HStack(spacing: size * 0.15) {
-                        // Left eye
-                        ZStack {
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: size * 0.25, height: size * 0.25)
+                    // Eyes - simplified with simple curved lines
+                    VStack(spacing: size * 0.1) {
+                        // Eyes - simple curved lines
+                        HStack(spacing: size * 0.2) {
+                            // Left eye
+                            Path { path in
+                                path.move(to: CGPoint(x: -size * 0.05, y: 0))
+                                path.addQuadCurve(
+                                    to: CGPoint(x: size * 0.05, y: 0),
+                                    control: CGPoint(x: 0, y: -size * 0.02)
+                                )
+                            }
+                            .stroke(Color.black, lineWidth: size * 0.02)
                             
-                            Circle()
-                                .fill(Color.black)
-                                .frame(width: size * 0.08, height: size * 0.08)
-                                .offset(x: -size * 0.03, y: -size * 0.03)
+                            // Right eye
+                            Path { path in
+                                path.move(to: CGPoint(x: -size * 0.05, y: 0))
+                                path.addQuadCurve(
+                                    to: CGPoint(x: size * 0.05, y: 0),
+                                    control: CGPoint(x: 0, y: -size * 0.02)
+                                )
+                            }
+                            .stroke(Color.black, lineWidth: size * 0.02)
                         }
+                        .offset(y: -size * 0.15)
                         
-                        // Right eye
-                        ZStack {
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: size * 0.25, height: size * 0.25)
-                            
-                            Circle()
-                                .fill(Color.black)
-                                .frame(width: size * 0.08, height: size * 0.08)
-                                .offset(x: -size * 0.03, y: -size * 0.03)
+                        // Smile - simple curved line
+                        Path { path in
+                            path.move(to: CGPoint(x: -size * 0.15, y: 0))
+                            path.addQuadCurve(
+                                to: CGPoint(x: size * 0.15, y: 0),
+                                control: CGPoint(x: 0, y: size * 0.05)
+                            )
                         }
+                        .stroke(Color.black, lineWidth: size * 0.03)
+                        .offset(y: size * 0.1)
                     }
-                    .offset(y: -size * 0.05)
                 )
-            
-            // Financial icons around the mascot
-            // Top Left - Security Shield
-            VStack {
-                HStack {
-                    Image(systemName: "shield.fill")
-                        .font(.system(size: size * 0.15))
-                        .foregroundColor(.green)
-                        .background(
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: size * 0.25, height: size * 0.25)
-                        )
-                    Spacer()
-                }
-                Spacer()
-            }
-            .offset(x: -size * 0.4, y: -size * 0.3)
-            
-            // Top Right - Safe
-            VStack {
-                HStack {
-                    Spacer()
-                    Image(systemName: "lock.shield.fill")
-                        .font(.system(size: size * 0.15))
-                        .foregroundColor(.gray)
-                        .background(
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: size * 0.25, height: size * 0.25)
-                        )
-                }
-                Spacer()
-            }
-            .offset(x: size * 0.4, y: -size * 0.3)
-            
-            // Bottom Left - Piggy Bank
-            VStack {
-                Spacer()
-                HStack {
-                    Image(systemName: "banknote.fill")
-                        .font(.system(size: size * 0.12))
-                        .foregroundColor(.green)
-                        .background(
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: size * 0.2, height: size * 0.2)
-                        )
-                    Spacer()
-                }
-            }
-            .offset(x: -size * 0.4, y: size * 0.3)
-            
-            // Bottom Right - Growth Arrow
-            VStack {
-                Spacer()
-                HStack {
-                    Spacer()
-                    Image(systemName: "arrow.up.right")
-                        .font(.system(size: size * 0.15))
-                        .foregroundColor(.red)
-                        .background(
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: size * 0.25, height: size * 0.25)
-                        )
-                }
-            }
-            .offset(x: size * 0.4, y: size * 0.3)
-            
-            // Middle Left - Money
-            VStack {
-                HStack {
-                    Image(systemName: "dollarsign.circle.fill")
-                        .font(.system(size: size * 0.12))
-                        .foregroundColor(.green)
-                        .background(
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: size * 0.2, height: size * 0.2)
-                        )
-                    Spacer()
-                }
-                Spacer()
-            }
-            .offset(x: -size * 0.35, y: 0)
-            
-            // Middle Right - Calendar
-            VStack {
-                HStack {
-                    Spacer()
-                    Image(systemName: "calendar")
-                        .font(.system(size: size * 0.12))
-                        .foregroundColor(.red)
-                        .background(
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: size * 0.2, height: size * 0.2)
-                        )
-                }
-                Spacer()
-            }
-            .offset(x: size * 0.35, y: 0)
         }
     }
 }

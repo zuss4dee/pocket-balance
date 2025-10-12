@@ -36,9 +36,9 @@ struct Pocket_BalanceApp: App {
                 }
             }
             .onAppear {
-                // Animate launch screen away after 2 seconds
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
-                    withAnimation(.easeInOut(duration: 0.5)) {
+                // Animate launch screen away after 1 second (faster startup)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+                    withAnimation(.easeInOut(duration: 0.3)) {
                         showLaunchScreen = false
                     }
                 }
