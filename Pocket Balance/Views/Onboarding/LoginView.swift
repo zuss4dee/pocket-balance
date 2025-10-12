@@ -10,11 +10,6 @@ import AuthenticationServices
 
 struct LoginView: View {
     @EnvironmentObject var authState: AuthenticationState
-    @State private var showPhoneLogin = false
-    @State private var showEmailSignIn = false
-    @State private var showEmailSignUp = false
-    @State private var showEmailConfirmation = false
-    @State private var confirmationEmail = ""
     
     var body: some View {
         NavigationStack {
@@ -32,7 +27,7 @@ struct LoginView: View {
                     .foregroundColor(.primary)
                     .padding(.bottom, 40)
                 
-                // Login Options
+                // Login Options - Minimal Design
                 VStack(spacing: 16) {
                     // Apple Sign-In
                     SignInWithAppleButton(
@@ -73,89 +68,13 @@ struct LoginView: View {
                         )
                         .cornerRadius(28)
                     }
-                    
-                    // Phone Number Login
-                    Button(action: {
-                        showPhoneLogin = true
-                    }) {
-                        HStack {
-                            Image(systemName: "phone.fill")
-                                .font(.system(size: 18, weight: .medium))
-                            Text("Continue with Phone Number")
-                                .font(.system(size: 17, weight: .medium))
-                        }
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 28)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
-                        .cornerRadius(28)
-                    }
-                    
-                    // Email - Create Account
-                    Button(action: {
-                        showEmailSignUp = true
-                    }) {
-                        HStack {
-                            Image(systemName: "envelope")
-                                .font(.system(size: 18, weight: .medium))
-                            Text("Continue with Email")
-                                .font(.system(size: 17, weight: .medium))
-                        }
-                        .foregroundColor(.primary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(Color.white)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 28)
-                                .stroke(Color.gray.opacity(0.3), lineWidth: 1)
-                        )
-                        .cornerRadius(28)
-                    }
                 }
                 .padding(.horizontal, 32)
                 
                 Spacer()
-                    .frame(height: 30)
-                
-                // Already have an account link
-                HStack {
-                    Text("Already have an account?")
-                        .font(.system(size: 16))
-                        .foregroundColor(.secondary)
-                    
-                    Button(action: {
-                        showEmailSignIn = true
-                    }) {
-                        Text("Log in")
-                            .font(.system(size: 16, weight: .medium))
-                            .foregroundColor(.blue)
-                    }
-                }
-                .padding(.bottom, 40)
+                    .frame(height: 60)
             }
             .background(Color.white)
-            .sheet(isPresented: $showPhoneLogin) {
-                PhoneLoginSheet()
-                    .environmentObject(authState)
-            }
-            .sheet(isPresented: $showEmailSignIn) {
-                EmailSignInView()
-                    .environmentObject(authState)
-            }
-            .sheet(isPresented: $showEmailSignUp) {
-                EmailSignUpView(onEmailConfirmationNeeded: { email in
-                    confirmationEmail = email
-                    showEmailConfirmation = true
-                })
-                .environmentObject(authState)
-            }
-            .sheet(isPresented: $showEmailConfirmation) {
-                EmailConfirmationSheet(email: confirmationEmail)
-            }
         }
     }
     
