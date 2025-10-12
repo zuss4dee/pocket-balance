@@ -30,28 +30,8 @@ struct LaunchScreenView: View {
                 
                 Spacer()
                 
-                // Decorative Element - Simple Balance Icon
-                ZStack {
-                    // Balance scale representation
-                    Circle()
-                        .fill(Color.black)
-                        .frame(width: 200, height: 200)
-                        .overlay(
-                            VStack(spacing: 8) {
-                                // Simple currency symbol
-                                Text("$")
-                                    .font(.system(size: 80, weight: .bold))
-                                    .foregroundColor(.white)
-                                
-                                // Balance beam
-                                Rectangle()
-                                    .fill(Color.white)
-                                    .frame(width: 80, height: 4)
-                                    .cornerRadius(2)
-                            }
-                            .offset(y: -10)
-                        )
-                }
+                // App Mascot - Black Circle with Eyes
+                FinancialMascotView(size: 200)
                 .padding(.bottom, 60)
                 
                 // Tagline
