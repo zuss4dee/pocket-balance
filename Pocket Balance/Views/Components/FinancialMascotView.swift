@@ -16,48 +16,38 @@ struct FinancialMascotView: View {
     
     var body: some View {
         ZStack {
-            // Main orange circle (mascot) - simplified
+            // Main black circle (mascot) - restored original design
             Circle()
-                .fill(Color.orange)
+                .fill(Color.black)
                 .frame(width: size, height: size)
                 .overlay(
-                    // Eyes - simplified with simple curved lines
-                    VStack(spacing: size * 0.1) {
-                        // Eyes - simple curved lines
-                        HStack(spacing: size * 0.2) {
-                            // Left eye
-                            Path { path in
-                                path.move(to: CGPoint(x: -size * 0.05, y: 0))
-                                path.addQuadCurve(
-                                    to: CGPoint(x: size * 0.05, y: 0),
-                                    control: CGPoint(x: 0, y: -size * 0.02)
-                                )
-                            }
-                            .stroke(Color.black, lineWidth: size * 0.02)
+                    // Eyes - original white circles with black pupils
+                    HStack(spacing: size * 0.15) {
+                        // Left eye
+                        ZStack {
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: size * 0.25, height: size * 0.25)
                             
-                            // Right eye
-                            Path { path in
-                                path.move(to: CGPoint(x: -size * 0.05, y: 0))
-                                path.addQuadCurve(
-                                    to: CGPoint(x: size * 0.05, y: 0),
-                                    control: CGPoint(x: 0, y: -size * 0.02)
-                                )
-                            }
-                            .stroke(Color.black, lineWidth: size * 0.02)
+                            Circle()
+                                .fill(Color.black)
+                                .frame(width: size * 0.08, height: size * 0.08)
+                                .offset(x: -size * 0.03, y: -size * 0.03)
                         }
-                        .offset(y: -size * 0.15)
                         
-                        // Smile - simple curved line
-                        Path { path in
-                            path.move(to: CGPoint(x: -size * 0.15, y: 0))
-                            path.addQuadCurve(
-                                to: CGPoint(x: size * 0.15, y: 0),
-                                control: CGPoint(x: 0, y: size * 0.05)
-                            )
+                        // Right eye
+                        ZStack {
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: size * 0.25, height: size * 0.25)
+                            
+                            Circle()
+                                .fill(Color.black)
+                                .frame(width: size * 0.08, height: size * 0.08)
+                                .offset(x: -size * 0.03, y: -size * 0.03)
                         }
-                        .stroke(Color.black, lineWidth: size * 0.03)
-                        .offset(y: size * 0.1)
                     }
+                    .offset(y: -size * 0.05)
                 )
         }
     }
