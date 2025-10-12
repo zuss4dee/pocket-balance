@@ -32,7 +32,7 @@ struct CreateProfileView: View {
             Spacer()
                 .frame(height: 60)
             
-            // Mascot
+            // Mascot (Financial-themed design)
             ZStack {
                 // Shadow
                 Ellipse()
@@ -40,49 +40,7 @@ struct CreateProfileView: View {
                     .frame(width: 160, height: 35)
                     .offset(y: 85)
                 
-                // Main circle
-                Circle()
-                    .fill(Color.black)
-                    .frame(width: 180, height: 180)
-                    .overlay(
-                        HStack(spacing: 18) {
-                            // Left eye
-                            ZStack {
-                                Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 45, height: 45)
-                                
-                                Circle()
-                                    .fill(Color.black)
-                                    .frame(width: 14, height: 14)
-                                    .offset(x: -5, y: -5)
-                            }
-                            
-                            // Right eye
-                            ZStack {
-                                Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 45, height: 45)
-                                
-                                Circle()
-                                    .fill(Color.black)
-                                    .frame(width: 14, height: 14)
-                                    .offset(x: -5, y: -5)
-                            }
-                        }
-                        .offset(y: -8)
-                    )
-                    .overlay(
-                        // Smile
-                        Path { path in
-                            path.move(to: CGPoint(x: 65, y: 100))
-                            path.addQuadCurve(
-                                to: CGPoint(x: 115, y: 100),
-                                control: CGPoint(x: 90, y: 112)
-                            )
-                        }
-                        .stroke(Color.white, lineWidth: 3)
-                    )
+                FinancialMascotView(size: 180)
             }
             .frame(maxWidth: .infinity)
             .padding(.bottom, 40)

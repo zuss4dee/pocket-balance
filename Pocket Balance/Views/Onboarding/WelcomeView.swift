@@ -24,7 +24,7 @@ struct WelcomeView: View {
             
             Spacer()
             
-            // Mascot
+            // Mascot (Financial-themed design)
             ZStack {
                 // Shadow
                 Ellipse()
@@ -32,49 +32,7 @@ struct WelcomeView: View {
                     .frame(width: 180, height: 40)
                     .offset(y: 100)
                 
-                // Main circle
-                Circle()
-                    .fill(Color.black)
-                    .frame(width: 200, height: 200)
-                    .overlay(
-                        HStack(spacing: 20) {
-                            // Left eye
-                            ZStack {
-                                Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 50, height: 50)
-                                
-                                Circle()
-                                    .fill(Color.black)
-                                    .frame(width: 15, height: 15)
-                                    .offset(x: -5, y: -5)
-                            }
-                            
-                            // Right eye
-                            ZStack {
-                                Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 50, height: 50)
-                                
-                                Circle()
-                                    .fill(Color.black)
-                                    .frame(width: 15, height: 15)
-                                    .offset(x: -5, y: -5)
-                            }
-                        }
-                        .offset(y: -10)
-                    )
-                    .overlay(
-                        // Smile
-                        Path { path in
-                            path.move(to: CGPoint(x: 70, y: 110))
-                            path.addQuadCurve(
-                                to: CGPoint(x: 130, y: 110),
-                                control: CGPoint(x: 100, y: 125)
-                            )
-                        }
-                        .stroke(Color.white, lineWidth: 3)
-                    )
+                FinancialMascotView(size: 200)
             }
             .padding(.bottom, 80)
             

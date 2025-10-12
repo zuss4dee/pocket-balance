@@ -22,40 +22,8 @@ struct LoginView: View {
                 Spacer()
                     .frame(height: 60)
                 
-                // App Logo/Mascot
-                ZStack {
-                    Circle()
-                        .fill(Color.black)
-                        .frame(width: 120, height: 120)
-                        .overlay(
-                            HStack(spacing: 12) {
-                                // Left eye
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.white)
-                                        .frame(width: 30, height: 30)
-                                    
-                                    Circle()
-                                        .fill(Color.black)
-                                        .frame(width: 10, height: 10)
-                                        .offset(x: -3, y: -3)
-                                }
-                                
-                                // Right eye
-                                ZStack {
-                                    Circle()
-                                        .fill(Color.white)
-                                        .frame(width: 30, height: 30)
-                                    
-                                    Circle()
-                                        .fill(Color.black)
-                                        .frame(width: 10, height: 10)
-                                        .offset(x: -3, y: -3)
-                                }
-                            }
-                            .offset(y: -5)
-                        )
-                }
+                // App Logo/Mascot (Financial-themed design)
+                FinancialMascotView(size: 120)
                 .padding(.bottom, 40)
                 
                 // Title
