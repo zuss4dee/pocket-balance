@@ -1220,19 +1220,36 @@ struct BudgetingViewStandalone: View {
         NavigationStack {
             ZStack {
                 if budgetCategories.isEmpty && remainingBalance <= 0 {
-                    // No balance to budget
-                    VStack(spacing: 20) {
-                        Image(systemName: "chart.pie")
-                            .font(.system(size: 60))
-                            .foregroundColor(.secondary)
+                    // No balance to budget - Redesigned to match the image
+                    VStack(spacing: 0) {
+                        Spacer()
                         
-                        Text("No balance to budget")
-                            .font(.system(size: 20, weight: .semibold))
+                        // Main content card
+                        VStack(spacing: 24) {
+                            // Pie chart icon
+                            Image(systemName: "chart.pie")
+                                .font(.system(size: 80, weight: .light))
+                                .foregroundColor(.gray)
+                            
+                            VStack(spacing: 8) {
+                                Text("No balance to budget")
+                                    .font(.system(size: 24, weight: .bold))
+                                    .foregroundColor(.primary)
+                                
+                                Text("Add income to start budgeting")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                        }
+                        .padding(40)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(UIColor.systemGray6))
+                        )
+                        .padding(.horizontal, 32)
                         
-                        Text("Add income to start budgeting")
-                            .font(.system(size: 15))
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+                        Spacer()
                     }
                 } else {
                     ScrollView(showsIndicators: false) {
@@ -1358,7 +1375,7 @@ struct BudgetingViewStandalone: View {
                     }
                 }
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color.white)
             .navigationTitle("Budget Manager")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -1366,8 +1383,14 @@ struct BudgetingViewStandalone: View {
                     Button(action: {
                         showAddCategory = true
                     }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 22))
+                        Image(systemName: "plus")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                Circle()
+                                    .fill(Color(UIColor.systemGray5))
+                            )
                     }
                     .disabled(remainingBalance <= 0)
                 }

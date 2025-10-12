@@ -1470,10 +1470,20 @@ struct AddSubscriptionSheet: View {
             return
         }
         
-        // All validations passed
-        let subscription = SubscriptionItem(amount: value, name: name)
-        subscriptions.append(subscription)
-        dismiss()
+        // All validations passed - Save to database
+        Task {
+            do {
+                let newSubscription = try await SupabaseService.shared.createSubscription(name: name, amount: value)
+                await MainActor.run {
+                    subscriptions.append(newSubscription)
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = "Failed to save subscription: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 }
 
@@ -1564,9 +1574,19 @@ struct EditSubscriptionSheet: View {
         guard let value = Double(amount),
               let index = subscriptions.firstIndex(where: { $0.id == subscription.id }) else { return }
         
-        subscriptions[index].amount = value
-        subscriptions[index].name = name
-        dismiss()
+        // Save to database
+        Task {
+            do {
+                try await SupabaseService.shared.updateSubscription(id: subscription.id, name: name, amount: value)
+                await MainActor.run {
+                    subscriptions[index].amount = value
+                    subscriptions[index].name = name
+                    dismiss()
+                }
+            } catch {
+                print("Failed to update subscription: \(error.localizedDescription)")
+            }
+        }
     }
 }
 
@@ -1593,19 +1613,36 @@ struct BudgetingView: View {
         NavigationStack {
             ZStack {
                 if budgetCategories.isEmpty && remainingBalance <= 0 {
-                    // No balance to budget
-                    VStack(spacing: 20) {
-                        Image(systemName: "chart.pie")
-                            .font(.system(size: 60))
-                            .foregroundColor(.secondary)
+                    // No balance to budget - Redesigned to match the image
+                    VStack(spacing: 0) {
+                        Spacer()
                         
-                        Text("No balance to budget")
-                            .font(.system(size: 20, weight: .semibold))
+                        // Main content card
+                        VStack(spacing: 24) {
+                            // Pie chart icon
+                            Image(systemName: "chart.pie")
+                                .font(.system(size: 80, weight: .light))
+                                .foregroundColor(.gray)
+                            
+                            VStack(spacing: 8) {
+                                Text("No balance to budget")
+                                    .font(.system(size: 24, weight: .bold))
+                                    .foregroundColor(.primary)
+                                
+                                Text("Add income to start budgeting")
+                                    .font(.system(size: 16, weight: .medium))
+                                    .foregroundColor(.secondary)
+                                    .multilineTextAlignment(.center)
+                            }
+                        }
+                        .padding(40)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(Color(UIColor.systemGray6))
+                        )
+                        .padding(.horizontal, 32)
                         
-                        Text("Add income to start budgeting")
-                            .font(.system(size: 15))
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
+                        Spacer()
                     }
                 } else {
                     ScrollView(showsIndicators: false) {
@@ -1731,7 +1768,7 @@ struct BudgetingView: View {
                     }
                 }
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(Color.white)
             .navigationTitle("Budget Manager")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -1745,8 +1782,14 @@ struct BudgetingView: View {
                     Button(action: {
                         showAddCategory = true
                     }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 22))
+                        Image(systemName: "plus")
+                            .font(.system(size: 18, weight: .medium))
+                            .foregroundColor(.primary)
+                            .frame(width: 32, height: 32)
+                            .background(
+                                Circle()
+                                    .fill(Color(UIColor.systemGray5))
+                            )
                     }
                     .disabled(remainingBalance <= 0)
                 }
