@@ -469,8 +469,17 @@ struct IncomesListView: View {
                                     editingIncome = income
                                 },
                                 onDelete: {
-                                    withAnimation {
-                                        incomes.removeAll { $0.id == income.id }
+                                    Task {
+                                        do {
+                                            try await SupabaseService.shared.deleteIncome(id: income.id)
+                                            await MainActor.run {
+                                                withAnimation {
+                                                    incomes.removeAll { $0.id == income.id }
+                                                }
+                                            }
+                                        } catch {
+                                            print("Failed to delete income: \(error.localizedDescription)")
+                                        }
                                     }
                                 }
                             )
