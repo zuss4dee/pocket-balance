@@ -11,6 +11,7 @@ import GoogleSignIn
 @main
 struct Pocket_BalanceApp: App {
     @State private var showLaunchScreen = true
+    @AppStorage("appearance") private var appearance: String = "system"
     
     init() {
         // Configure Google Sign-In
@@ -28,7 +29,7 @@ struct Pocket_BalanceApp: App {
             ZStack {
                 // Show AppRootView which handles authentication routing
                 AppRootView()
-                    .preferredColorScheme(.dark)
+                    .preferredColorScheme(selectedColorScheme)
                 
                 if showLaunchScreen {
                     LaunchScreenView()
@@ -44,6 +45,19 @@ struct Pocket_BalanceApp: App {
                     }
                 }
             }
+        }
+    }
+}
+
+private extension Pocket_BalanceApp {
+    var selectedColorScheme: ColorScheme? {
+        switch appearance {
+        case "light":
+            return .light
+        case "dark":
+            return .dark
+        default:
+            return nil // system
         }
     }
 }

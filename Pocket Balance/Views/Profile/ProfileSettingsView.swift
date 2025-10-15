@@ -12,6 +12,7 @@ struct ProfileSettingsView: View {
     let isPresentedAsSheet: Bool
     let onDismiss: (() -> Void)?
     
+    @AppStorage("appearance") private var appearance: String = "system"
     @State private var userFullName: String = ""
     @State private var userPhone: String = ""
     @State private var userEmail: String = ""
@@ -127,6 +128,22 @@ struct ProfileSettingsView: View {
                     
                     // Settings Sections
                     VStack(spacing: 16) {
+                        // Appearance
+                        SettingsSection(title: "Appearance") {
+                            VStack(spacing: 0) {
+                                VStack(alignment: .leading, spacing: 12) {
+                                    Picker("Appearance", selection: $appearance) {
+                                        Text("Light").tag("light")
+                                        Text("Dark").tag("dark")
+                                        Text("System").tag("system")
+                                    }
+                                    .pickerStyle(.segmented)
+                                    .padding(.horizontal, 20)
+                                    .padding(.vertical, 12)
+                                }
+                            }
+                        }
+
                         // Personal Information
                         SettingsSection(title: "Personal Information") {
                             VStack(spacing: 0) {
