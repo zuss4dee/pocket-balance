@@ -150,139 +150,63 @@ struct HomeView: View {
     // MARK: - View Components
     
     private var greetingHeader: some View {
-        HStack(alignment: .center, spacing: 16) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(greeting())
-                    .font(.system(size: 15, weight: .medium))
-                    .foregroundStyle(.secondary)
-                
-                if isLoadingUserName {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                } else {
-                    Text(userFullName)
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundStyle(.primary)
-                }
-            }
-            
+        HStack(alignment: .center) {
+            Text(isLoadingUserName ? "" : userFullName)
+                .font(.system(size: 22, weight: .semibold, design: .rounded))
+                .foregroundStyle(.primary)
             Spacer()
-            
-            // Refresh indicator
-            if isRefreshing {
-                ProgressView()
-                    .scaleEffect(0.8)
-            }
+            if isRefreshing { ProgressView().scaleEffect(0.8) }
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
     }
     
     private var balanceCard: some View {
-        VStack(spacing: 8) {
-            Text("Your Balance")
-                .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .tracking(1)
-            
+        VStack(spacing: 12) {
             Text(remainingBalance.formatAsShortCurrency())
-                .font(.system(size: 42, weight: .bold, design: .rounded))
-                .foregroundColor(remainingBalance >= 0 ? .green : .red)
-            
-            Text(remainingBalance >= 0 ? "Available to spend" : "Over budget")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(remainingBalance >= 0 ? .green.opacity(0.8) : .red.opacity(0.8))
+                .font(.system(size: 44, weight: .bold, design: .rounded))
+                .foregroundColor(.primary)
+            Text(remainingBalance >= 0 ? "Available" : "Over budget")
+                .font(.system(size: 13, weight: .medium))
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
+        .padding(.vertical, 36)
     }
     
     private var balanceCardWithBackground: some View {
         balanceCard
             .padding(.horizontal, 20)
             .background(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .fill(remainingBalance >= 0 ? Color.green.opacity(0.08) : Color.red.opacity(0.08))
+                LinearGradient(
+                    colors: remainingBalance >= 0 ? [Color.green.opacity(0.18), Color.green.opacity(0.06)] : [Color.red.opacity(0.18), Color.red.opacity(0.06)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
             )
+            .mask(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(remainingBalance >= 0 ? Color.green.opacity(0.2) : Color.red.opacity(0.2), lineWidth: 1)
+                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
             )
             .padding(.horizontal, 20)
     }
     
-    private var sectionDivider: some View {
-        VStack(spacing: 6) {
-            Divider()
-                .padding(.horizontal, 20)
-            
-            Text("BREAKDOWN")
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .tracking(1)
-        }
-        .padding(.vertical, 8)
-    }
+    private var sectionDivider: some View { EmptyView() }
     
     private var dashboardCards: some View {
-        VStack(spacing: 12) {
-            // Income Card
-            Button(action: {
-                if incomes.isEmpty {
-                    showAddIncome = true
-                } else {
-                    showIncomesList = true
-                }
-            }) {
-                DashboardCardView(
-                    title: "Total Income",
-                    metric: totalIncome.formatAsShortCurrency(),
-                    context: incomes.isEmpty ? "Tap to add income" : "\(incomes.count) income source\(incomes.count == 1 ? "" : "s") • Tap to view",
-                    iconSystemName: "arrow.up.circle",
-                    iconColor: .green
-                )
+        VStack(spacing: 14) {
+            HStack(spacing: 12) {
+                MetricChip(title: "Income", value: totalIncome.formatAsShortCurrency(), color: .green)
+                    .onTapGesture { incomes.isEmpty ? (showAddIncome = true) : (showIncomesList = true) }
+                MetricChip(title: "Expenses", value: totalExpenses.formatAsShortCurrency(), color: .red)
+                    .onTapGesture { expenses.isEmpty ? (showAddExpense = true) : (showExpensesList = true) }
+                MetricChip(title: "Subs", value: totalSubscriptions.formatAsShortCurrency(), color: .purple)
+                    .onTapGesture { subscriptions.isEmpty ? (showAddSubscription = true) : (showSubscriptionsList = true) }
             }
-            .buttonStyle(.plain)
-            
-            // Primary Monthly Expenses Card
-            Button(action: {
-                if expenses.isEmpty {
-                    showAddExpense = true
-                } else {
-                    showExpensesList = true
-                }
-            }) {
-                DashboardCardView(
-                    title: "Primary Monthly Expenses",
-                    metric: totalExpenses.formatAsShortCurrency(),
-                    context: expenses.isEmpty ? "Tap to add expenses" : "\(expenses.count) expense\(expenses.count == 1 ? "" : "s") • Tap to view",
-                    iconSystemName: "arrow.down.circle",
-                    iconColor: .red
-                )
-            }
-            .buttonStyle(.plain)
-            
-            // Recurring Payments Card
-            Button(action: {
-                if subscriptions.isEmpty {
-                    showAddSubscription = true
-                } else {
-                    showSubscriptionsList = true
-                }
-            }) {
-                DashboardCardView(
-                    title: "Recurring Payments",
-                    metric: totalSubscriptions.formatAsShortCurrency(),
-                    context: subscriptions.isEmpty ? "Tap to add subscriptions" : "\(subscriptions.count) subscription\(subscriptions.count == 1 ? "" : "s") • Tap to view",
-                    iconSystemName: "repeat.circle",
-                    iconColor: .purple
-                )
-            }
-            .buttonStyle(.plain)
+            .padding(.horizontal, 20)
         }
-        .padding(.horizontal, 20)
-        .padding(.bottom, 40)
+        .padding(.bottom, 36)
     }
     
     var body: some View {
@@ -298,17 +222,7 @@ struct HomeView: View {
             .background(Color(UIColor.systemGroupedBackground))
             .navigationTitle("Pocket Balance")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        print("Notifications tapped")
-                    }) {
-                        Image(systemName: "bell")
-                            .font(.system(size: 17, weight: .regular))
-                            .foregroundStyle(.primary)
-                    }
-                }
-            }
+            .toolbar { }
             .sheet(isPresented: $showAddIncome) {
                 AddIncomeSheet(incomes: $incomes)
             }
@@ -431,6 +345,31 @@ struct HomeView: View {
         }
         
         isLoadingUserName = false
+    }
+}
+
+// MARK: - Minimal Metric Chip
+
+struct MetricChip: View {
+    let title: String
+    let value: String
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title.uppercased())
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .foregroundStyle(color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(UIColor.secondarySystemGroupedBackground))
+        )
     }
 }
 
