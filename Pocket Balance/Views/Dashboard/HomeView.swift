@@ -212,12 +212,44 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 32) {
-                    greetingHeader
-                    balanceCardWithBackground
-                    sectionDivider
+                VStack(spacing: 20) {
+                    // Top hero card
+                    VStack(alignment: .leading, spacing: 14) {
+                        HStack(alignment: .center) {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("My Balance")
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(.secondary)
+                                Text(remainingBalance.formatAsCurrency())
+                                    .font(.system(size: 34, weight: .bold, design: .rounded))
+                                HStack(spacing: 6) {
+                                    Circle().fill(Color.green).frame(width: 6, height: 6)
+                                    Text(remainingBalance >= 0 ? "+ Available" : "Over budget")
+                                        .font(.system(size: 12, weight: .medium))
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            Spacer()
+                            DonutChartView(expenses: totalExpenses, subs: totalSubscriptions, remaining: max(remainingBalance, 0))
+                                .frame(width: 86, height: 86)
+                        }
+                        HStack(spacing: 12) {
+                            MetricPill(title: "Expenses", value: totalExpenses.formatAsShortCurrency(), color: .red)
+                            MetricPill(title: "Subs", value: totalSubscriptions.formatAsShortCurrency(), color: .purple)
+                            MetricPill(title: "Income", value: totalIncome.formatAsShortCurrency(), color: .green)
+                        }
+                    }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .fill(Color(UIColor.secondarySystemGroupedBackground))
+                    )
+                    .padding(.horizontal, 16)
+
+                    // Quick chips row
                     dashboardCards
                 }
+                .padding(.top, 8)
             }
             .background(Color(UIColor.systemGroupedBackground))
             .navigationTitle("Pocket Balance")
@@ -369,6 +401,61 @@ struct MetricChip: View {
         .background(
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(Color(UIColor.secondarySystemGroupedBackground))
+        )
+    }
+}
+
+// MARK: - Donut Chart + Metric Pill
+
+struct DonutChartView: View {
+    let expenses: Double
+    let subs: Double
+    let remaining: Double
+    
+    var total: Double { max(expenses + subs + remaining, 1) }
+    
+    var body: some View {
+        ZStack {
+            Circle().stroke(Color.gray.opacity(0.2), lineWidth: 12)
+            CircleSegment(start: 0, end: expenses/total, color: .red)
+            CircleSegment(start: expenses/total, end: (expenses+subs)/total, color: .purple)
+            CircleSegment(start: (expenses+subs)/total, end: 1.0, color: .green)
+        }
+    }
+}
+
+struct CircleSegment: View {
+    let start: Double
+    let end: Double
+    let color: Color
+    
+    var body: some View {
+        Circle()
+            .trim(from: CGFloat(start), to: CGFloat(end))
+            .stroke(color, style: StrokeStyle(lineWidth: 12, lineCap: .round))
+            .rotationEffect(.degrees(-90))
+    }
+}
+
+struct MetricPill: View {
+    let title: String
+    let value: String
+    let color: Color
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.system(size: 18, weight: .semibold, design: .rounded))
+                .foregroundStyle(color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color(UIColor.tertiarySystemGroupedBackground))
         )
     }
 }
