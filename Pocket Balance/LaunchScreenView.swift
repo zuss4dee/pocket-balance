@@ -19,8 +19,10 @@ struct LaunchScreenView: View {
             Color.white
                 .ignoresSafeArea()
             
-            // Centered app logo with title
-            VStack(spacing: 20) {
+            // Layout similar to reference: large whitespace, centered logo, brand at bottom
+            VStack {
+                Spacer()
+
                 Image("AppLogo")
                     .resizable()
                     .scaledToFit()
@@ -30,13 +32,26 @@ struct LaunchScreenView: View {
                     .animation(.easeOut(duration: 0.6).delay(0.2), value: mascotScale)
                     .animation(.easeOut(duration: 0.6).delay(0.2), value: mascotOpacity)
 
-                Text("Pocket Balance")
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
-                    .foregroundColor(.black)
-                    .offset(y: taglineOffset)
-                    .opacity(taglineOpacity)
-                    .animation(.easeOut(duration: 0.6).delay(0.35), value: taglineOffset)
-                    .animation(.easeOut(duration: 0.6).delay(0.35), value: taglineOpacity)
+                Spacer()
+
+                VStack(spacing: 6) {
+                    Text("from")
+                        .font(.system(size: 14, weight: .regular))
+                        .foregroundColor(.gray)
+                        .offset(y: taglineOffset)
+                        .opacity(taglineOpacity)
+                        .animation(.easeOut(duration: 0.6).delay(0.35), value: taglineOffset)
+                        .animation(.easeOut(duration: 0.6).delay(0.35), value: taglineOpacity)
+
+                    Text("Pocket Balance")
+                        .font(.system(size: 20, weight: .semibold, design: .rounded))
+                        .foregroundColor(.black)
+                        .offset(y: taglineOffset)
+                        .opacity(taglineOpacity)
+                        .animation(.easeOut(duration: 0.6).delay(0.45), value: taglineOffset)
+                        .animation(.easeOut(duration: 0.6).delay(0.45), value: taglineOpacity)
+                }
+                .padding(.bottom, 36)
             }
         }
         .onAppear {
