@@ -28,6 +28,7 @@ struct Pocket_BalanceApp: App {
             ZStack {
                 // Show AppRootView which handles authentication routing
                 AppRootView()
+                    .preferredColorScheme(.dark)
                 
                 if showLaunchScreen {
                     LaunchScreenView()
