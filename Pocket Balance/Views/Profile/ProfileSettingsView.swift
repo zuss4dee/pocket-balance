@@ -132,14 +132,26 @@ struct ProfileSettingsView: View {
                         SettingsSection(title: "Appearance") {
                             VStack(spacing: 0) {
                                 VStack(alignment: .leading, spacing: 12) {
-                                    Picker("Appearance", selection: $appearance) {
-                                        Text("Light").tag("light")
-                                        Text("Dark").tag("dark")
-                                        Text("System").tag("system")
+                                    // Custom styled toggle for Light/Dark
+                                    Toggle(isOn: Binding(
+                                        get: { appearance == "dark" },
+                                        set: { appearance = $0 ? "dark" : "light" }
+                                    )) {
+                                        Text("Dark Mode")
+                                            .font(.system(size: 17, weight: .medium))
                                     }
-                                    .pickerStyle(.segmented)
+                                    .toggleStyle(AccentPillToggleStyle())
                                     .padding(.horizontal, 20)
-                                    .padding(.vertical, 12)
+                                    .padding(.top, 12)
+
+                                    // System option shortcut
+                                    Button(action: { appearance = "system" }) {
+                                        Text("Use System Appearance")
+                                            .font(.system(size: 15))
+                                            .foregroundColor(.secondary)
+                                    }
+                                    .padding(.horizontal, 20)
+                                    .padding(.bottom, 12)
                                 }
                             }
                         }
@@ -558,6 +570,33 @@ struct SettingsRow: View {
             .padding(.vertical, 16)
         }
         .buttonStyle(PlainButtonStyle())
+    }
+}
+
+// MARK: - Custom Toggle Style (CSS-like pill switch)
+
+struct AccentPillToggleStyle: ToggleStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Button(action: { withAnimation(.easeInOut(duration: 0.2)) { configuration.isOn.toggle() } }) {
+            HStack {
+                configuration.label
+                Spacer()
+                ZStack(alignment: configuration.isOn ? .trailing : .leading) {
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(configuration.isOn ? Color(red: 148/255, green: 118/255, blue: 255/255) : Color(white: 0.32))
+                        .frame(width: 50, height: 30)
+                        .animation(.easeInOut(duration: 0.2), value: configuration.isOn)
+                    Circle()
+                        .strokeBorder(Color.white, lineWidth: 5)
+                        .background(Circle().fill(configuration.isOn ? Color.white : Color.clear))
+                        .frame(width: 20, height: 20)
+                        .shadow(color: Color.black.opacity(0.26), radius: 7, x: 5, y: 2)
+                        .padding(.horizontal, 5)
+                        .animation(.easeInOut(duration: 0.2), value: configuration.isOn)
+                }
+            }
+        }
+        .buttonStyle(.plain)
     }
 }
 
