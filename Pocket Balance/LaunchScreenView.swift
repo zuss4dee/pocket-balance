@@ -19,15 +19,25 @@ struct LaunchScreenView: View {
             Color.white
                 .ignoresSafeArea()
             
-            // Centered app logo
-            Image("AppLogo")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 260, height: 260)
-                .scaleEffect(mascotScale)
-                .opacity(mascotOpacity)
-                .animation(.easeOut(duration: 0.6).delay(0.2), value: mascotScale)
-                .animation(.easeOut(duration: 0.6).delay(0.2), value: mascotOpacity)
+            // Centered app logo with title
+            VStack(spacing: 20) {
+                Image("AppLogo")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 260, height: 260)
+                    .scaleEffect(mascotScale)
+                    .opacity(mascotOpacity)
+                    .animation(.easeOut(duration: 0.6).delay(0.2), value: mascotScale)
+                    .animation(.easeOut(duration: 0.6).delay(0.2), value: mascotOpacity)
+
+                Text("Pocket Balance")
+                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    .foregroundColor(.black)
+                    .offset(y: taglineOffset)
+                    .opacity(taglineOpacity)
+                    .animation(.easeOut(duration: 0.6).delay(0.35), value: taglineOffset)
+                    .animation(.easeOut(duration: 0.6).delay(0.35), value: taglineOpacity)
+            }
         }
         .onAppear {
             // Trigger animations
