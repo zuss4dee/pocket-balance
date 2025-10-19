@@ -332,6 +332,56 @@ class SupabaseService {
             .execute()
     }
     
+    // MARK: - CREDIT CARDS OPERATIONS
+    
+    func fetchCreditCards() async throws -> [CreditCard] {
+        let userId = try await getCurrentUserId()
+        
+        let response: [DatabaseCreditCard] = try await client
+            .from("credit_cards")
+            .select()
+            .eq("user_id", value: userId.uuidString)
+            .order("created_at", ascending: false)
+            .execute()
+            .value
+        
+        return response.map { $0.toCreditCard() }
+    }
+    
+    func createCreditCard(name: String, limit: Double, color: String) async throws -> CreditCard {
+        let userId = try await getCurrentUserId()
+        
+        let newCreditCard = DatabaseCreditCardInsert(user_id: userId, card_name: name, credit_limit: limit, card_color: color)
+        
+        let response: DatabaseCreditCard = try await client
+            .from("credit_cards")
+            .insert(newCreditCard)
+            .select()
+            .single()
+            .execute()
+            .value
+        
+        return response.toCreditCard()
+    }
+    
+    func updateCreditCard(id: UUID, name: String, limit: Double, color: String) async throws {
+        let update = DatabaseCreditCardUpdate(card_name: name, credit_limit: limit, card_color: color)
+        
+        try await client
+            .from("credit_cards")
+            .update(update)
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+    
+    func deleteCreditCard(id: UUID) async throws {
+        try await client
+            .from("credit_cards")
+            .delete()
+            .eq("id", value: id.uuidString)
+            .execute()
+    }
+    
 }
 
 // MARK: - Database Models
@@ -409,5 +459,34 @@ struct DatabaseSubscriptionInsert: Codable {
 struct DatabaseSubscriptionUpdate: Codable {
     let name: String
     let amount: Double
+}
+
+// Credit Card Models
+struct DatabaseCreditCard: Codable {
+    let id: UUID
+    let user_id: UUID
+    let card_name: String
+    let credit_limit: Double
+    let card_color: String
+    let created_at: Date
+    let updated_at: Date
+    
+    func toCreditCard() -> CreditCard {
+        var card = CreditCard(id: id, name: card_name, limit: credit_limit, color: card_color)
+        return card
+    }
+}
+
+struct DatabaseCreditCardInsert: Codable {
+    let user_id: UUID
+    let card_name: String
+    let credit_limit: Double
+    let card_color: String
+}
+
+struct DatabaseCreditCardUpdate: Codable {
+    let card_name: String
+    let credit_limit: Double
+    let card_color: String
 }
 

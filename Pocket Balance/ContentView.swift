@@ -524,6 +524,8 @@ struct CreditCardsView: View {
     @State private var creditCards: [CreditCard] = []
     @State private var showAddCard = false
     @State private var editingCard: CreditCard?
+    @State private var isLoading = false
+    @State private var errorMessage = ""
     
     var totalCredit: Double {
         creditCards.reduce(0) { $0 + $1.limit }
@@ -620,12 +622,8 @@ struct CreditCardsView: View {
                                         .tracking(1.5)
                                     
                                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                                        Text("£")
-                                            .font(.system(size: 32, weight: .bold, design: .rounded))
-                                            .foregroundColor(.blue)
-                                        
-                                        Text(String(format: "%.2f", totalCredit))
-                                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                                        Text(totalCredit.formatAsShortCurrency())
+                                            .font(.system(size: 36, weight: .bold, design: .rounded))
                                             .foregroundColor(.blue)
                                             .shadow(color: .blue.opacity(0.2), radius: 4, x: 0, y: 2)
                                         
@@ -634,7 +632,7 @@ struct CreditCardsView: View {
                                     
                                     HStack {
                                         Text("Across \(creditCards.count) card\(creditCards.count == 1 ? "" : "s")")
-                                            .font(.system(size: 16, weight: .medium))
+                                            .font(.system(size: 14, weight: .medium))
                                             .foregroundColor(.secondary)
                                         
                                         Spacer()
@@ -646,7 +644,7 @@ struct CreditCardsView: View {
                                                 .frame(width: 8, height: 8)
                                             
                                             Text("Available")
-                                                .font(.system(size: 14, weight: .semibold))
+                                                .font(.system(size: 12, weight: .semibold))
                                                 .foregroundColor(.green)
                                         }
                                     }
@@ -692,7 +690,7 @@ struct CreditCardsView: View {
                             VStack(alignment: .leading, spacing: 20) {
                                 HStack {
                                     Text("Your Cards")
-                                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                                        .font(.system(size: 20, weight: .bold, design: .rounded))
                                         .foregroundColor(.primary)
                                     
                                     Spacer()
@@ -708,7 +706,7 @@ struct CreditCardsView: View {
                                             },
                                             onDelete: {
                                                 withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
-                                                    creditCards.removeAll { $0.id == card.id }
+                                                    deleteCreditCard(id: card.id)
                                                 }
                                             }
                                         )
@@ -763,10 +761,82 @@ struct CreditCardsView: View {
                 }
             }
             .sheet(isPresented: $showAddCard) {
-                AddCreditCardSheet(creditCards: $creditCards)
+                AddCreditCardSheet(creditCards: $creditCards, onAddCard: addCreditCard)
             }
             .sheet(item: $editingCard) { card in
-                EditCreditCardSheet(creditCards: $creditCards, card: card)
+                EditCreditCardSheet(creditCards: $creditCards, card: card, onUpdateCard: updateCreditCard)
+            }
+            .onAppear {
+                loadCreditCards()
+            }
+        }
+    }
+    
+    // MARK: - Credit Card Operations
+    
+    private func loadCreditCards() {
+        isLoading = true
+        errorMessage = ""
+        
+        Task {
+            do {
+                let cards = try await SupabaseService.shared.fetchCreditCards()
+                await MainActor.run {
+                    self.creditCards = cards
+                    self.isLoading = false
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Failed to load credit cards: \(error.localizedDescription)"
+                    self.isLoading = false
+                }
+            }
+        }
+    }
+    
+    private func addCreditCard(name: String, limit: Double, color: String) {
+        Task {
+            do {
+                let newCard = try await SupabaseService.shared.createCreditCard(name: name, limit: limit, color: color)
+                await MainActor.run {
+                    self.creditCards.append(newCard)
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Failed to add credit card: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+    
+    private func updateCreditCard(id: UUID, name: String, limit: Double, color: String) {
+        Task {
+            do {
+                try await SupabaseService.shared.updateCreditCard(id: id, name: name, limit: limit, color: color)
+                await MainActor.run {
+                    if let index = self.creditCards.firstIndex(where: { $0.id == id }) {
+                        self.creditCards[index] = CreditCard(id: id, name: name, limit: limit, color: color)
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Failed to update credit card: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+    
+    private func deleteCreditCard(id: UUID) {
+        Task {
+            do {
+                try await SupabaseService.shared.deleteCreditCard(id: id)
+                await MainActor.run {
+                    self.creditCards.removeAll { $0.id == id }
+                }
+            } catch {
+                await MainActor.run {
+                    self.errorMessage = "Failed to delete credit card: \(error.localizedDescription)"
+                }
             }
         }
     }
@@ -804,10 +874,11 @@ struct CreditCardRow: View {
                     .lineLimit(1)
                 
                 HStack(spacing: 3) {
-                    if card.detectedBrand != .generic {
+                    if card.detectedBrand != .generic && !card.name.lowercased().contains(card.detectedBrand.brandName.lowercased()) {
                         Text(card.detectedBrand.brandName)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundColor(card.cardColor)
+                            .lineLimit(1)
                         Text("•")
                             .font(.system(size: 11, weight: .regular))
                             .foregroundColor(.secondary)
@@ -815,6 +886,7 @@ struct CreditCardRow: View {
                     Text("Limit")
                         .font(.system(size: 11, weight: .regular))
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
             }
             
@@ -822,7 +894,7 @@ struct CreditCardRow: View {
             
             // Limit Amount (smaller font)
             VStack(alignment: .trailing, spacing: 2) {
-                Text(card.limit.formatAsCurrency())
+                Text(card.limit.formatAsShortCurrency())
                     .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
                     .lineLimit(1)
@@ -890,26 +962,28 @@ struct ModernCreditCardRow: View {
             // Enhanced Card Info
             VStack(alignment: .leading, spacing: 8) {
                 Text(card.name.isEmpty ? "Credit Card" : card.name)
-                    .font(.system(size: 18, weight: .bold))
+                    .font(.system(size: 14, weight: .bold))
                     .foregroundColor(card.name.isEmpty ? .secondary : .primary)
                     .lineLimit(1)
                 
                 HStack(spacing: 8) {
-                    if card.detectedBrand != .generic {
+                    if card.detectedBrand != .generic && !card.name.lowercased().contains(card.detectedBrand.brandName.lowercased()) {
                         HStack(spacing: 4) {
                             Circle()
                                 .fill(card.cardColor)
                                 .frame(width: 6, height: 6)
                             
                             Text(card.detectedBrand.brandName)
-                                .font(.system(size: 13, weight: .semibold))
+                                .font(.system(size: 11, weight: .semibold))
                                 .foregroundColor(card.cardColor)
+                                .lineLimit(1)
                         }
                     }
                     
                     Text("Credit Limit")
-                        .font(.system(size: 13, weight: .medium))
+                        .font(.system(size: 11, weight: .medium))
                         .foregroundColor(.secondary)
+                        .lineLimit(1)
                 }
             }
             
@@ -917,13 +991,14 @@ struct ModernCreditCardRow: View {
             
             // Enhanced Amount Display
             VStack(alignment: .trailing, spacing: 6) {
-                Text(card.limit.formatAsCurrency())
-                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                Text(card.limit.formatAsShortCurrency())
+                    .font(.system(size: 14, weight: .bold, design: .rounded))
                     .foregroundColor(.primary)
+                    .lineLimit(1)
                     .shadow(color: .primary.opacity(0.1), radius: 1, x: 0, y: 1)
                 
                 Text("Available")
-                    .font(.system(size: 12, weight: .semibold))
+                    .font(.system(size: 10, weight: .semibold))
                     .foregroundColor(.green)
                     .textCase(.uppercase)
                     .tracking(0.5)
@@ -996,6 +1071,7 @@ struct ModernCreditCardRow: View {
 struct AddCreditCardSheet: View {
     @Environment(\.dismiss) var dismiss
     @Binding var creditCards: [CreditCard]
+    let onAddCard: (String, Double, String) -> Void
     @State private var cardName: String = ""
     @State private var limit: String = ""
     @State private var selectedColor: String = "blue"
@@ -1170,8 +1246,7 @@ struct AddCreditCardSheet: View {
         }
         
         // All validations passed
-        let card = CreditCard(name: cardName, limit: limitValue, color: selectedColor)
-        creditCards.append(card)
+        onAddCard(cardName, limitValue, selectedColor)
         dismiss()
     }
     
@@ -1194,6 +1269,7 @@ struct EditCreditCardSheet: View {
     @Environment(\.dismiss) var dismiss
     @Binding var creditCards: [CreditCard]
     let card: CreditCard
+    let onUpdateCard: (UUID, String, Double, String) -> Void
     
     @State private var cardName: String = ""
     @State private var limit: String = ""
@@ -1334,13 +1410,9 @@ struct EditCreditCardSheet: View {
     }
     
     private func saveChanges() {
-        guard let limitValue = Double(limit),
-              let index = creditCards.firstIndex(where: { $0.id == card.id }) else { return }
+        guard let limitValue = Double(limit) else { return }
         
-        creditCards[index].name = cardName
-        creditCards[index].limit = limitValue
-        creditCards[index].color = selectedColor
-        creditCards[index].updateBrand() // Update brand detection
+        onUpdateCard(card.id, cardName, limitValue, selectedColor)
         dismiss()
     }
     
