@@ -14,7 +14,6 @@ class AppData: ObservableObject {
     @Published var incomes: [IncomeItem] = []
     @Published var expenses: [ExpenseItem] = []
     @Published var subscriptions: [SubscriptionItem] = []
-    @Published var budgetCategories: [BudgetCategory] = []
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var lastRefreshDate: Date?
@@ -37,13 +36,6 @@ class AppData: ObservableObject {
         totalIncome - totalExpenses - totalSubscriptions
     }
     
-    var totalBudgeted: Double {
-        budgetCategories.reduce(0) { $0 + $1.amount }
-    }
-    
-    var unbudgetedBalance: Double {
-        remainingBalance - totalBudgeted
-    }
     
     // MARK: - Load Data from Supabase
     
@@ -59,21 +51,17 @@ class AppData: ObservableObject {
             async let fetchedIncomes = supabaseService.fetchAllIncome()
             async let fetchedExpenses = supabaseService.fetchExpenses()
             async let fetchedSubscriptions = supabaseService.fetchSubscriptions()
-            async let fetchedBudgets = supabaseService.fetchBudgetCategories()
-            
-            let (incomes, expenses, subscriptions, budgets) = try await (fetchedIncomes, fetchedExpenses, fetchedSubscriptions, fetchedBudgets)
+            let (incomes, expenses, subscriptions) = try await (fetchedIncomes, fetchedExpenses, fetchedSubscriptions)
             
             self.incomes = incomes
             self.expenses = expenses
             self.subscriptions = subscriptions
-            self.budgetCategories = budgets
             self.lastRefreshDate = Date()
             
             print("✅ Data loaded from Supabase successfully:")
             print("   📊 Incomes: \(incomes.count) items")
             print("   💸 Expenses: \(expenses.count) items")
             print("   🔄 Subscriptions: \(subscriptions.count) items")
-            print("   📋 Budgets: \(budgets.count) items")
         } catch {
             let errorMsg = "Failed to load data: \(error.localizedDescription)"
             print("❌ \(errorMsg)")
@@ -98,7 +86,6 @@ class AppData: ObservableObject {
         incomes = []
         expenses = []
         subscriptions = []
-        budgetCategories = []
         lastRefreshDate = nil
         errorMessage = nil
         print("🧹 Cleared all user data")
@@ -131,52 +118,35 @@ struct ContentView: View {
             }
             
             if selectedTab == 1 {
-                BudgetViewWrapper()
-                    .environmentObject(appData)
-                    .tabItem {
-                        Image(systemName: selectedTab == 1 ? "chart.pie.fill" : "chart.pie")
-                        Text("Budget")
-                    }
-                    .tag(1)
-            } else {
-                Color.clear
-                    .tabItem {
-                        Image(systemName: "chart.pie")
-                        Text("Budget")
-                    }
-                    .tag(1)
-            }
-            
-            if selectedTab == 2 {
                 CreditCardsView()
                     .tabItem {
-                        Image(systemName: selectedTab == 2 ? "creditcard.fill" : "creditcard")
+                        Image(systemName: selectedTab == 1 ? "creditcard.fill" : "creditcard")
                         Text("Cards")
                     }
-                    .tag(2)
+                    .tag(1)
             } else {
                 Color.clear
                     .tabItem {
                         Image(systemName: "creditcard")
                         Text("Cards")
                     }
-                    .tag(2)
+                    .tag(1)
             }
             
-            if selectedTab == 3 {
+            if selectedTab == 2 {
                 ProfileView()
                     .tabItem {
-                        Image(systemName: selectedTab == 3 ? "person.fill" : "person")
+                        Image(systemName: selectedTab == 2 ? "person.fill" : "person")
                         Text("Profile")
                     }
-                    .tag(3)
+                    .tag(2)
             } else {
                 Color.clear
                     .tabItem {
                         Image(systemName: "person")
                         Text("Profile")
                     }
-                    .tag(3)
+                    .tag(2)
             }
         }
         .accentColor(.blue)
@@ -211,17 +181,6 @@ struct HomeViewWrapper: View {
     }
 }
 
-struct BudgetViewWrapper: View {
-    @EnvironmentObject var appData: AppData
-    
-    var body: some View {
-        BudgetingViewStandalone(
-            budgetCategories: $appData.budgetCategories,
-            remainingBalance: appData.remainingBalance,
-            totalBudgeted: appData.totalBudgeted
-        )
-    }
-}
 
 // MARK: - Tab Views
 
@@ -574,159 +533,204 @@ struct CreditCardsView: View {
         NavigationStack {
             ZStack {
                 if creditCards.isEmpty {
-                    // Empty State
-                    VStack(spacing: 32) {
-                        Spacer()
+                    // Ultra-Modern Empty State
+                    ZStack {
+                        // Minimal background
+                        Color.clear
                         
-                        // Illustration
+                        VStack(spacing: 40) {
+                            Spacer()
+                        
+                        // Minimal Illustration
                         ZStack {
-                            // Phone
-                            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            // Simple Credit Card
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
                                 .fill(
                                     LinearGradient(
-                                        colors: [Color(red: 0.82, green: 0.71, blue: 0.55), Color(red: 0.78, green: 0.67, blue: 0.51)],
+                                        colors: [.blue.opacity(0.8), .blue.opacity(0.6)],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
                                 )
-                                .frame(width: 140, height: 260)
-                                .shadow(color: Color.black.opacity(0.15), radius: 20, x: 0, y: 10)
-                            
-                            // Phone Screen
-                            RoundedRectangle(cornerRadius: 15, style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color(red: 0.53, green: 0.68, blue: 0.68), Color(red: 0.48, green: 0.63, blue: 0.63)],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
+                                .frame(width: 140, height: 90)
+                                .shadow(
+                                    color: .blue.opacity(0.2),
+                                    radius: 8,
+                                    x: 0,
+                                    y: 4
                                 )
-                                .frame(width: 120, height: 200)
-                                .offset(y: -10)
                             
-                            // Home Button
-                            Circle()
-                                .fill(Color(red: 0.53, green: 0.68, blue: 0.68))
-                                .frame(width: 16, height: 16)
-                                .offset(y: 110)
+                            // Minimal Card Stripe
+                            RoundedRectangle(cornerRadius: 4, style: .continuous)
+                                .fill(Color.white.opacity(0.9))
+                                .frame(width: 140, height: 20)
+                                .offset(y: -15)
                             
-                            // Credit Card
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(
-                                    LinearGradient(
-                                        colors: [Color(red: 0.84, green: 0.49, blue: 0.42), Color(red: 0.78, green: 0.45, blue: 0.38)],
-                                        startPoint: .top,
-                                        endPoint: .bottom
-                                    )
-                                )
-                                .frame(width: 160, height: 100)
-                                .shadow(color: Color.black.opacity(0.2), radius: 15, x: 5, y: 5)
-                                .offset(x: 60, y: 0)
-                            
-                            // Card Stripe
-                            Rectangle()
-                                .fill(Color(red: 0.82, green: 0.71, blue: 0.55))
-                                .frame(width: 160, height: 24)
-                                .offset(x: 60, y: -20)
-                            
-                            // Plus Icon
+                            // Simple Plus Icon
                             ZStack {
                                 Circle()
-                                    .fill(Color.white)
-                                    .frame(width: 60, height: 60)
-                                    .shadow(color: Color.black.opacity(0.15), radius: 10, x: 0, y: 5)
+                                    .fill(.white)
+                                    .frame(width: 50, height: 50)
+                                    .shadow(
+                                        color: .black.opacity(0.1),
+                                        radius: 4,
+                                        x: 0,
+                                        y: 2
+                                    )
                                 
                                 Image(systemName: "plus")
-                                    .font(.system(size: 28, weight: .bold))
-                                    .foregroundColor(.black)
+                                    .font(.system(size: 20, weight: .semibold))
+                                    .foregroundColor(.blue)
                             }
-                            .offset(x: 70, y: -80)
+                            .offset(x: 60, y: -40)
                         }
-                        .padding(.bottom, 40)
+                        .padding(.bottom, 50)
                         
-                        // Title
-                        Text("Add card to your wallet")
-                            .font(.system(size: 28, weight: .bold))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
+                        // Enhanced Title with better typography
+                        VStack(spacing: 24) {
+                            Text("Add your credit card")
+                                .font(.system(size: 36, weight: .bold, design: .rounded))
+                                .multilineTextAlignment(.center)
+                                .foregroundColor(.primary)
+                                .shadow(color: .primary.opacity(0.1), radius: 4, x: 0, y: 2)
+                            
+                            Text("Track your credit limits and manage your spending with ease")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .lineSpacing(8)
+                                .padding(.horizontal, 32)
+                            
+                        }
                         
-                        // Description
-                        Text("Add your card to track your credit limits and manage your spending.")
-                            .font(.system(size: 16, weight: .regular))
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
-                            .lineSpacing(4)
-                        
-                        Spacer()
-                        Spacer()
+                            Spacer()
+                            Spacer()
+                        }
                     }
                 } else {
                     ScrollView(showsIndicators: false) {
                         VStack(spacing: 24) {
-                            // Total Credit Card
-                            VStack(spacing: 16) {
-                                HStack {
-                                    Text("Total Credit Available")
-                                        .font(.system(size: 14, weight: .medium))
+                            // Modern Total Credit Card
+                            VStack(spacing: 24) {
+                                VStack(spacing: 12) {
+                                    Text("TOTAL CREDIT AVAILABLE")
+                                        .font(.system(size: 13, weight: .bold))
                                         .foregroundColor(.secondary)
                                         .textCase(.uppercase)
+                                        .tracking(1.5)
                                     
-                                    Spacer()
-                                }
-                                
-                                HStack(alignment: .firstTextBaseline, spacing: 4) {
-                                    Text("£")
-                                        .font(.system(size: 24, weight: .bold, design: .rounded))
-                                        .foregroundColor(.blue)
+                                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                                        Text("£")
+                                            .font(.system(size: 32, weight: .bold, design: .rounded))
+                                            .foregroundColor(.blue)
+                                        
+                                        Text(String(format: "%.2f", totalCredit))
+                                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                                            .foregroundColor(.blue)
+                                            .shadow(color: .blue.opacity(0.2), radius: 4, x: 0, y: 2)
+                                        
+                                        Spacer()
+                                    }
                                     
-                                    Text(String(format: "%.2f", totalCredit))
-                                        .font(.system(size: 40, weight: .bold, design: .rounded))
-                                        .foregroundColor(.blue)
-                                    
-                                    Spacer()
-                                }
-                                
-                                Text("Across \(creditCards.count) card\(creditCards.count == 1 ? "" : "s")")
-                                    .font(.system(size: 14, weight: .regular))
-                                    .foregroundColor(.secondary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .padding(20)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color(UIColor.secondarySystemGroupedBackground))
-                            )
-                            .padding(.horizontal, 20)
-                            .padding(.top, 8)
-                            
-                            // Cards List
-                            VStack(alignment: .leading, spacing: 12) {
-                                Text("Your Cards")
-                                    .font(.system(size: 20, weight: .bold, design: .rounded))
-                                    .padding(.horizontal, 20)
-                                
-                                ForEach(creditCards) { card in
-                                    CreditCardRow(
-                                        card: card,
-                                        onEdit: {
-                                            editingCard = card
-                                        },
-                                        onDelete: {
-                                            withAnimation {
-                                                creditCards.removeAll { $0.id == card.id }
-                                            }
+                                    HStack {
+                                        Text("Across \(creditCards.count) card\(creditCards.count == 1 ? "" : "s")")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundColor(.secondary)
+                                        
+                                        Spacer()
+                                        
+                                        // Credit utilization indicator
+                                        HStack(spacing: 8) {
+                                            Circle()
+                                                .fill(.green)
+                                                .frame(width: 8, height: 8)
+                                            
+                                            Text("Available")
+                                                .font(.system(size: 14, weight: .semibold))
+                                                .foregroundColor(.green)
                                         }
-                                    )
+                                    }
                                 }
-                                .padding(.horizontal, 20)
+                            }
+                            .padding(28)
+                            .background(
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                        .fill(.background)
+                                    
+                                    RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [Color.blue.opacity(0.05), Color.purple.opacity(0.03)],
+                                                startPoint: .topLeading,
+                                                endPoint: .bottomTrailing
+                                            )
+                                        )
+                                }
+                            )
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [Color.blue.opacity(0.15), Color.purple.opacity(0.08)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1
+                                    )
+                            )
+                            .shadow(
+                                color: .blue.opacity(0.1),
+                                radius: 20,
+                                x: 0,
+                                y: 8
+                            )
+                            .padding(.horizontal, 24)
+                            .padding(.top, 16)
+                            
+                            // Modern Cards List
+                            VStack(alignment: .leading, spacing: 20) {
+                                HStack {
+                                    Text("Your Cards")
+                                        .font(.system(size: 24, weight: .bold, design: .rounded))
+                                        .foregroundColor(.primary)
+                                    
+                                    Spacer()
+                                }
+                                .padding(.horizontal, 24)
+                                
+                                VStack(spacing: 16) {
+                                    ForEach(creditCards) { card in
+                                        ModernCreditCardRow(
+                                            card: card,
+                                            onEdit: {
+                                                editingCard = card
+                                            },
+                                            onDelete: {
+                                                withAnimation(.spring(response: 0.5, dampingFraction: 0.8)) {
+                                                    creditCards.removeAll { $0.id == card.id }
+                                                }
+                                            }
+                                        )
+                                    }
+                                }
+                                .padding(.horizontal, 24)
                             }
                             .padding(.bottom, 40)
                         }
                     }
                 }
             }
-            .background(Color(UIColor.systemGroupedBackground))
+            .background(
+                LinearGradient(
+                    colors: [
+                        Color(UIColor.systemGroupedBackground),
+                        Color(UIColor.systemGroupedBackground).opacity(0.8)
+                    ],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
             .navigationTitle("Credit Cards")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -734,8 +738,27 @@ struct CreditCardsView: View {
                     Button(action: {
                         showAddCard = true
                     }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 22))
+                        ZStack {
+                            Circle()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [Color.blue.opacity(0.15), Color.purple.opacity(0.1)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 40, height: 40)
+                                .shadow(
+                                    color: .blue.opacity(0.2),
+                                    radius: 8,
+                                    x: 0,
+                                    y: 4
+                                )
+                            
+                            Image(systemName: "plus")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.blue)
+                        }
                     }
                 }
             }
@@ -828,6 +851,142 @@ struct CreditCardRow: View {
         .background(
             RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(Color(UIColor.secondarySystemGroupedBackground))
+        )
+    }
+}
+
+// MARK: - Modern Credit Card Row
+
+struct ModernCreditCardRow: View {
+    let card: CreditCard
+    let onEdit: () -> Void
+    let onDelete: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 20) {
+            // Enhanced Card Icon with Brand Logo
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [card.cardColor, card.cardColor.opacity(0.8)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                    .frame(width: 56, height: 56)
+                    .shadow(
+                        color: card.cardColor.opacity(0.3),
+                        radius: 8,
+                        x: 0,
+                        y: 4
+                    )
+                
+                Image(systemName: card.displayLogo)
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundColor(.white)
+            }
+            
+            // Enhanced Card Info
+            VStack(alignment: .leading, spacing: 8) {
+                Text(card.name.isEmpty ? "Credit Card" : card.name)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundColor(card.name.isEmpty ? .secondary : .primary)
+                    .lineLimit(1)
+                
+                HStack(spacing: 8) {
+                    if card.detectedBrand != .generic {
+                        HStack(spacing: 4) {
+                            Circle()
+                                .fill(card.cardColor)
+                                .frame(width: 6, height: 6)
+                            
+                            Text(card.detectedBrand.brandName)
+                                .font(.system(size: 13, weight: .semibold))
+                                .foregroundColor(card.cardColor)
+                        }
+                    }
+                    
+                    Text("Credit Limit")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(.secondary)
+                }
+            }
+            
+            Spacer()
+            
+            // Enhanced Amount Display
+            VStack(alignment: .trailing, spacing: 6) {
+                Text(card.limit.formatAsCurrency())
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+                    .foregroundColor(.primary)
+                    .shadow(color: .primary.opacity(0.1), radius: 1, x: 0, y: 1)
+                
+                Text("Available")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.green)
+                    .textCase(.uppercase)
+                    .tracking(0.5)
+            }
+            
+            // Modern Menu Button
+            Menu {
+                Button(action: onEdit) {
+                    Label("Edit", systemImage: "pencil")
+                }
+                Button(role: .destructive, action: onDelete) {
+                    Label("Delete", systemImage: "trash")
+                }
+            } label: {
+                ZStack {
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        .padding(24)
+        .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(.background)
+                
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                card.cardColor.opacity(0.05),
+                                card.cardColor.opacity(0.02)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(
+                    LinearGradient(
+                        colors: [
+                            card.cardColor.opacity(0.15),
+                            card.cardColor.opacity(0.05)
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ),
+                    lineWidth: 1
+                )
+        )
+        .shadow(
+            color: card.cardColor.opacity(0.08),
+            radius: 12,
+            x: 0,
+            y: 6
         )
     }
 }
@@ -1198,212 +1357,6 @@ struct EditCreditCardSheet: View {
     }
 }
 
-// MARK: - Budget View (Standalone for Tab)
-
-struct BudgetingViewStandalone: View {
-    @Binding var budgetCategories: [BudgetCategory]
-    let remainingBalance: Double
-    let totalBudgeted: Double
-    @State private var showAddCategory = false
-    @State private var editingCategory: BudgetCategory?
-    
-    var unbudgetedBalance: Double {
-        remainingBalance - totalBudgeted
-    }
-    
-    var budgetProgress: Double {
-        guard remainingBalance > 0 else { return 0 }
-        return min(totalBudgeted / remainingBalance, 1.0)
-    }
-    
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                if budgetCategories.isEmpty && remainingBalance <= 0 {
-                    // No balance to budget - Redesigned to match the image
-                    VStack(spacing: 0) {
-                        Spacer()
-                        
-                        // Main content card
-                        VStack(spacing: 24) {
-                            // Pie chart icon
-                            Image(systemName: "chart.pie")
-                                .font(.system(size: 80, weight: .light))
-                                .foregroundColor(.gray)
-                            
-                            VStack(spacing: 8) {
-                                Text("No balance to budget")
-                                    .font(.system(size: 24, weight: .bold))
-                                    .foregroundColor(.primary)
-                                
-                                Text("Add income to start budgeting")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                            }
-                        }
-                        .padding(40)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(UIColor.systemGray6))
-                        )
-                        .padding(.horizontal, 32)
-                        
-                        Spacer()
-                    }
-                } else {
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 24) {
-                            // Budget Overview Card
-                            VStack(spacing: 20) {
-                                // Remaining Balance
-                                VStack(spacing: 8) {
-                                    Text("Available to Budget")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                        .textCase(.uppercase)
-                                    
-                                    Text(remainingBalance.formatAsCurrency())
-                                        .font(.system(size: 40, weight: .bold, design: .rounded))
-                                        .foregroundColor(.primary)
-                                }
-                                
-                                // Progress Bar
-                                VStack(spacing: 12) {
-                                    GeometryReader { geometry in
-                                        ZStack(alignment: .leading) {
-                                            // Background
-                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                .fill(Color.gray.opacity(0.2))
-                                                .frame(height: 12)
-                                            
-                                            // Progress
-                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                .fill(
-                                                    LinearGradient(
-                                                        colors: budgetProgress < 1.0 ? [.blue, .purple] : [.red, .orange],
-                                                        startPoint: .leading,
-                                                        endPoint: .trailing
-                                                    )
-                                                )
-                                                .frame(width: geometry.size.width * budgetProgress, height: 12)
-                                        }
-                                    }
-                                    .frame(height: 12)
-                                    
-                                    HStack {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Budgeted")
-                                                .font(.system(size: 12, weight: .medium))
-                                                .foregroundColor(.secondary)
-                                            Text(totalBudgeted.formatAsCurrency())
-                                                .font(.system(size: 16, weight: .bold, design: .rounded))
-                                                .foregroundColor(.blue)
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        VStack(alignment: .trailing, spacing: 4) {
-                                            Text("Unbudgeted")
-                                                .font(.system(size: 12, weight: .medium))
-                                                .foregroundColor(.secondary)
-                                            Text(unbudgetedBalance.formatAsCurrency())
-                                                .font(.system(size: 16, weight: .bold, design: .rounded))
-                                                .foregroundColor(unbudgetedBalance >= 0 ? .green : .red)
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(20)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color(UIColor.secondarySystemGroupedBackground))
-                            )
-                            .padding(.horizontal, 20)
-                            .padding(.top, 8)
-                            
-                            // Budget Categories
-                            if !budgetCategories.isEmpty {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("Budget Categories")
-                                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                                        .padding(.horizontal, 20)
-                                    
-                                    ForEach(budgetCategories) { category in
-                                        BudgetCategoryRow(
-                                            category: category,
-                                            onEdit: {
-                                                editingCategory = category
-                                            },
-                                            onDelete: {
-                                                Task {
-                                                    do {
-                                                        try await SupabaseService.shared.deleteBudgetCategory(id: category.id)
-                                                        await MainActor.run {
-                                                            withAnimation {
-                                                                budgetCategories.removeAll { $0.id == category.id }
-                                                            }
-                                                        }
-                                                    } catch {
-                                                        print("Failed to delete budget category: \(error.localizedDescription)")
-                                                    }
-                                                }
-                                            }
-                                        )
-                                    }
-                                    .padding(.horizontal, 20)
-                                }
-                                .padding(.bottom, 40)
-                            } else {
-                                // Empty State
-                                VStack(spacing: 16) {
-                                    Image(systemName: "folder")
-                                        .font(.system(size: 50))
-                                        .foregroundColor(.secondary)
-                                    
-                                    Text("No budget categories yet")
-                                        .font(.system(size: 18, weight: .semibold))
-                                    
-                                    Text("Tap + to create your first budget category")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.secondary)
-                                        .multilineTextAlignment(.center)
-                                }
-                                .padding(.vertical, 40)
-                            }
-                        }
-                    }
-                }
-            }
-            .background(Color.white)
-            .navigationTitle("Budget Manager")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showAddCategory = true
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(width: 32, height: 32)
-                            .background(
-                                Circle()
-                                    .fill(Color(UIColor.systemGray5))
-                            )
-                    }
-                    .disabled(remainingBalance <= 0)
-                }
-            }
-            .sheet(isPresented: $showAddCategory) {
-                AddBudgetCategorySheet(budgetCategories: $budgetCategories, availableBalance: unbudgetedBalance)
-            }
-            .sheet(item: $editingCategory) { category in
-                EditBudgetCategorySheet(budgetCategories: $budgetCategories, category: category, availableBalance: unbudgetedBalance + category.amount)
-            }
-        }
-    }
-}
 
 #Preview {
     ContentView()

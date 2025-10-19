@@ -85,35 +85,6 @@ struct SubscriptionItem: Identifiable, Codable {
     }
 }
 
-struct BudgetCategory: Identifiable, Codable {
-    let id: UUID
-    var name: String
-    var amount: Double
-    var icon: String
-    var color: String
-    
-    init(id: UUID = UUID(), name: String, amount: Double, icon: String = "tag.fill", color: String = "blue") {
-        self.id = id
-        self.name = name
-        self.amount = amount
-        self.icon = icon
-        self.color = color
-    }
-    
-    var categoryColor: Color {
-        switch color {
-        case "blue": return .blue
-        case "purple": return .purple
-        case "green": return .green
-        case "orange": return .orange
-        case "red": return .red
-        case "pink": return .pink
-        case "yellow": return .yellow
-        case "teal": return .teal
-        default: return .blue
-        }
-    }
-}
 
 struct HomeView: View {
     @Binding var incomes: [IncomeItem]
@@ -150,111 +121,157 @@ struct HomeView: View {
     // MARK: - View Components
     
     private var greetingHeader: some View {
-        HStack(alignment: .center) {
-            Text(isLoadingUserName ? "" : userFullName)
-                .font(.system(size: 22, weight: .semibold, design: .rounded))
-                .foregroundStyle(.primary)
+        HStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(greeting())
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.secondary)
+                
+                if isLoadingUserName {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                } else {
+                    Text(userFullName)
+                        .font(.system(size: 28, weight: .bold, design: .rounded))
+                        .foregroundStyle(.primary)
+                }
+            }
+            
             Spacer()
-            if isRefreshing { ProgressView().scaleEffect(0.8) }
+            
+            // Refresh indicator
+            if isRefreshing {
+                ProgressView()
+                    .scaleEffect(0.8)
+            }
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
     }
     
     private var balanceCard: some View {
-        VStack(spacing: 12) {
-            Text(remainingBalance.formatAsShortCurrency())
-                .font(.system(size: 44, weight: .bold, design: .rounded))
-                .foregroundColor(.primary)
-            Text(remainingBalance >= 0 ? "Available" : "Over budget")
-                .font(.system(size: 13, weight: .medium))
+        VStack(spacing: 8) {
+            Text("Your Balance")
+                .font(.system(size: 13, weight: .semibold))
                 .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(1)
+            
+            Text(remainingBalance.formatAsShortCurrency())
+                .font(.system(size: 42, weight: .bold, design: .rounded))
+                .foregroundColor(remainingBalance >= 0 ? .green : .red)
+            
+            Text(remainingBalance >= 0 ? "Available to spend" : "Over budget")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(remainingBalance >= 0 ? .green.opacity(0.8) : .red.opacity(0.8))
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 36)
+        .padding(.vertical, 32)
     }
     
     private var balanceCardWithBackground: some View {
         balanceCard
             .padding(.horizontal, 20)
             .background(
-                LinearGradient(
-                    colors: remainingBalance >= 0 ? [Color.green.opacity(0.18), Color.green.opacity(0.06)] : [Color.red.opacity(0.18), Color.red.opacity(0.06)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(remainingBalance >= 0 ? Color.green.opacity(0.08) : Color.red.opacity(0.08))
             )
-            .mask(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(Color.primary.opacity(0.08), lineWidth: 1)
+                    .stroke(remainingBalance >= 0 ? Color.green.opacity(0.2) : Color.red.opacity(0.2), lineWidth: 1)
             )
             .padding(.horizontal, 20)
     }
     
-    private var sectionDivider: some View { EmptyView() }
+    private var sectionDivider: some View {
+        VStack(spacing: 6) {
+            Divider()
+                .padding(.horizontal, 20)
+            
+            Text("BREAKDOWN")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .tracking(1)
+        }
+        .padding(.vertical, 8)
+    }
     
     private var dashboardCards: some View {
-        VStack(spacing: 14) {
-            HStack(spacing: 12) {
-                MetricChip(title: "Income", value: totalIncome.formatAsShortCurrency(), color: .green)
-                    .onTapGesture { incomes.isEmpty ? (showAddIncome = true) : (showIncomesList = true) }
-                MetricChip(title: "Expenses", value: totalExpenses.formatAsShortCurrency(), color: .red)
-                    .onTapGesture { expenses.isEmpty ? (showAddExpense = true) : (showExpensesList = true) }
-                MetricChip(title: "Subs", value: totalSubscriptions.formatAsShortCurrency(), color: .purple)
-                    .onTapGesture { subscriptions.isEmpty ? (showAddSubscription = true) : (showSubscriptionsList = true) }
+        VStack(spacing: 12) {
+            // Income Card
+            Button(action: {
+                if incomes.isEmpty {
+                    showAddIncome = true
+                } else {
+                    showIncomesList = true
+                }
+            }) {
+                DashboardCardView(
+                    title: "Total Income",
+                    metric: totalIncome.formatAsShortCurrency(),
+                    context: incomes.isEmpty ? "Tap to add income" : "\(incomes.count) income source\(incomes.count == 1 ? "" : "s") • Tap to view",
+                    iconSystemName: "arrow.up.circle",
+                    iconColor: .green
+                )
             }
-            .padding(.horizontal, 20)
+            .buttonStyle(.plain)
+            
+            // Primary Monthly Expenses Card
+            Button(action: {
+                if expenses.isEmpty {
+                    showAddExpense = true
+                } else {
+                    showExpensesList = true
+                }
+            }) {
+                DashboardCardView(
+                    title: "Primary Monthly Expenses",
+                    metric: totalExpenses.formatAsShortCurrency(),
+                    context: expenses.isEmpty ? "Tap to add expenses" : "\(expenses.count) expense\(expenses.count == 1 ? "" : "s") • Tap to view",
+                    iconSystemName: "arrow.down.circle",
+                    iconColor: .red
+                )
+            }
+            .buttonStyle(.plain)
+            
+            // Recurring Payments Card
+            Button(action: {
+                if subscriptions.isEmpty {
+                    showAddSubscription = true
+                } else {
+                    showSubscriptionsList = true
+                }
+            }) {
+                DashboardCardView(
+                    title: "Recurring Payments",
+                    metric: totalSubscriptions.formatAsShortCurrency(),
+                    context: subscriptions.isEmpty ? "Tap to add subscriptions" : "\(subscriptions.count) subscription\(subscriptions.count == 1 ? "" : "s") • Tap to view",
+                    iconSystemName: "repeat.circle",
+                    iconColor: .purple
+                )
+            }
+            .buttonStyle(.plain)
         }
-        .padding(.bottom, 36)
+        .padding(.horizontal, 20)
+        .padding(.bottom, 40)
     }
     
     var body: some View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 20) {
-                    // Top hero card
-                    VStack(alignment: .leading, spacing: 14) {
-                        HStack(alignment: .center) {
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("My Balance")
-                                    .font(.system(size: 13, weight: .medium))
-                                    .foregroundStyle(.secondary)
-                                Text(remainingBalance.formatAsCurrency())
-                                    .font(.system(size: 34, weight: .bold, design: .rounded))
-                                HStack(spacing: 6) {
-                                    Circle().fill(Color.green).frame(width: 6, height: 6)
-                                    Text(remainingBalance >= 0 ? "+ Available" : "Over budget")
-                                        .font(.system(size: 12, weight: .medium))
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-                            Spacer()
-                            DonutChartView(expenses: totalExpenses, subs: totalSubscriptions, remaining: max(remainingBalance, 0))
-                                .frame(width: 86, height: 86)
-                        }
-                        HStack(spacing: 12) {
-                            MetricPill(title: "Expenses", value: totalExpenses.formatAsShortCurrency(), color: .red)
-                            MetricPill(title: "Subs", value: totalSubscriptions.formatAsShortCurrency(), color: .purple)
-                            MetricPill(title: "Income", value: totalIncome.formatAsShortCurrency(), color: .green)
-                        }
-                    }
-                    .padding(16)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(Color(UIColor.secondarySystemGroupedBackground))
-                    )
-                    .padding(.horizontal, 16)
-
-                    // Quick chips row
+                VStack(spacing: 32) {
+                    greetingHeader
+                    balanceCardWithBackground
+                    sectionDivider
                     dashboardCards
                 }
-                .padding(.top, 8)
             }
             .background(Color(UIColor.systemGroupedBackground))
             .navigationTitle("Pocket Balance")
             .navigationBarTitleDisplayMode(.inline)
-            .toolbar { }
+            .toolbar {
+                // No toolbar items needed
+            }
             .sheet(isPresented: $showAddIncome) {
                 AddIncomeSheet(incomes: $incomes)
             }
@@ -377,86 +394,6 @@ struct HomeView: View {
         }
         
         isLoadingUserName = false
-    }
-}
-
-// MARK: - Minimal Metric Chip
-
-struct MetricChip: View {
-    let title: String
-    let value: String
-    let color: Color
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title.uppercased())
-                .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                .foregroundStyle(color)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(14)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(UIColor.secondarySystemGroupedBackground))
-        )
-    }
-}
-
-// MARK: - Donut Chart + Metric Pill
-
-struct DonutChartView: View {
-    let expenses: Double
-    let subs: Double
-    let remaining: Double
-    
-    var total: Double { max(expenses + subs + remaining, 1) }
-    
-    var body: some View {
-        ZStack {
-            Circle().stroke(Color.gray.opacity(0.2), lineWidth: 12)
-            CircleSegment(start: 0, end: expenses/total, color: .red)
-            CircleSegment(start: expenses/total, end: (expenses+subs)/total, color: .purple)
-            CircleSegment(start: (expenses+subs)/total, end: 1.0, color: .green)
-        }
-    }
-}
-
-struct CircleSegment: View {
-    let start: Double
-    let end: Double
-    let color: Color
-    
-    var body: some View {
-        Circle()
-            .trim(from: CGFloat(start), to: CGFloat(end))
-            .stroke(color, style: StrokeStyle(lineWidth: 12, lineCap: .round))
-            .rotationEffect(.degrees(-90))
-    }
-}
-
-struct MetricPill: View {
-    let title: String
-    let value: String
-    let color: Color
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
-            Text(value)
-                .font(.system(size: 18, weight: .semibold, design: .rounded))
-                .foregroundStyle(color)
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(12)
-        .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color(UIColor.tertiarySystemGroupedBackground))
-        )
     }
 }
 
@@ -1616,812 +1553,3 @@ struct EditSubscriptionSheet: View {
     }
 }
 
-// MARK: - Budgeting View
-
-struct BudgetingView: View {
-    @Environment(\.dismiss) var dismiss
-    @Binding var budgetCategories: [BudgetCategory]
-    let remainingBalance: Double
-    let totalBudgeted: Double
-    @State private var showAddCategory = false
-    @State private var editingCategory: BudgetCategory?
-    
-    var unbudgetedBalance: Double {
-        remainingBalance - totalBudgeted
-    }
-    
-    var budgetProgress: Double {
-        guard remainingBalance > 0 else { return 0 }
-        return min(totalBudgeted / remainingBalance, 1.0)
-    }
-    
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                if budgetCategories.isEmpty && remainingBalance <= 0 {
-                    // No balance to budget - Redesigned to match the image
-                    VStack(spacing: 0) {
-                        Spacer()
-                        
-                        // Main content card
-                        VStack(spacing: 24) {
-                            // Pie chart icon
-                            Image(systemName: "chart.pie")
-                                .font(.system(size: 80, weight: .light))
-                                .foregroundColor(.gray)
-                            
-                            VStack(spacing: 8) {
-                                Text("No balance to budget")
-                                    .font(.system(size: 24, weight: .bold))
-                                    .foregroundColor(.primary)
-                                
-                                Text("Add income to start budgeting")
-                                    .font(.system(size: 16, weight: .medium))
-                                    .foregroundColor(.secondary)
-                                    .multilineTextAlignment(.center)
-                            }
-                        }
-                        .padding(40)
-                        .background(
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(Color(UIColor.systemGray6))
-                        )
-                        .padding(.horizontal, 32)
-                        
-                        Spacer()
-                    }
-                } else {
-                    ScrollView(showsIndicators: false) {
-                        VStack(spacing: 24) {
-                            // Budget Overview Card
-                            VStack(spacing: 20) {
-                                // Remaining Balance
-                                VStack(spacing: 8) {
-                                    Text("Available to Budget")
-                                        .font(.system(size: 14, weight: .medium))
-                                        .foregroundColor(.secondary)
-                                        .textCase(.uppercase)
-                                    
-                                    Text(remainingBalance.formatAsCurrency())
-                                        .font(.system(size: 40, weight: .bold, design: .rounded))
-                                        .foregroundColor(.primary)
-                                }
-                                
-                                // Progress Bar
-                                VStack(spacing: 12) {
-                                    GeometryReader { geometry in
-                                        ZStack(alignment: .leading) {
-                                            // Background
-                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                .fill(Color.gray.opacity(0.2))
-                                                .frame(height: 12)
-                                            
-                                            // Progress
-                                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                                .fill(
-                                                    LinearGradient(
-                                                        colors: budgetProgress < 1.0 ? [.blue, .purple] : [.red, .orange],
-                                                        startPoint: .leading,
-                                                        endPoint: .trailing
-                                                    )
-                                                )
-                                                .frame(width: geometry.size.width * budgetProgress, height: 12)
-                                        }
-                                    }
-                                    .frame(height: 12)
-                                    
-                                    HStack {
-                                        VStack(alignment: .leading, spacing: 4) {
-                                            Text("Budgeted")
-                                                .font(.system(size: 12, weight: .medium))
-                                                .foregroundColor(.secondary)
-                                            Text(totalBudgeted.formatAsCurrency())
-                                                .font(.system(size: 16, weight: .bold, design: .rounded))
-                                                .foregroundColor(.blue)
-                                        }
-                                        
-                                        Spacer()
-                                        
-                                        VStack(alignment: .trailing, spacing: 4) {
-                                            Text("Unbudgeted")
-                                                .font(.system(size: 12, weight: .medium))
-                                                .foregroundColor(.secondary)
-                                            Text(unbudgetedBalance.formatAsCurrency())
-                                                .font(.system(size: 16, weight: .bold, design: .rounded))
-                                                .foregroundColor(unbudgetedBalance >= 0 ? .green : .red)
-                                        }
-                                    }
-                                }
-                            }
-                            .padding(20)
-                            .background(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .fill(Color(UIColor.secondarySystemGroupedBackground))
-                            )
-                            .padding(.horizontal, 20)
-                            .padding(.top, 8)
-                            
-                            // Budget Categories
-                            if !budgetCategories.isEmpty {
-                                VStack(alignment: .leading, spacing: 12) {
-                                    Text("Budget Categories")
-                                        .font(.system(size: 20, weight: .bold, design: .rounded))
-                                        .padding(.horizontal, 20)
-                                    
-                                    ForEach(budgetCategories) { category in
-                                        BudgetCategoryRow(
-                                            category: category,
-                                            onEdit: {
-                                                editingCategory = category
-                                            },
-                                            onDelete: {
-                                                Task {
-                                                    do {
-                                                        try await SupabaseService.shared.deleteBudgetCategory(id: category.id)
-                                                        await MainActor.run {
-                                                            withAnimation {
-                                                                budgetCategories.removeAll { $0.id == category.id }
-                                                            }
-                                                        }
-                                                    } catch {
-                                                        print("Failed to delete budget category: \(error.localizedDescription)")
-                                                    }
-                                                }
-                                            }
-                                        )
-                                    }
-                                    .padding(.horizontal, 20)
-                                }
-                                .padding(.bottom, 40)
-                            } else {
-                                // Empty State
-                                VStack(spacing: 16) {
-                                    Image(systemName: "folder")
-                                        .font(.system(size: 50))
-                                        .foregroundColor(.secondary)
-                                    
-                                    Text("No budget categories yet")
-                                        .font(.system(size: 18, weight: .semibold))
-                                    
-                                    Text("Tap + to create your first budget category")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.secondary)
-                                        .multilineTextAlignment(.center)
-                                }
-                                .padding(.vertical, 40)
-                            }
-                        }
-                    }
-                }
-            }
-            .background(Color.white)
-            .navigationTitle("Budget Manager")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-                
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        showAddCategory = true
-                    }) {
-                        Image(systemName: "plus")
-                            .font(.system(size: 18, weight: .medium))
-                            .foregroundColor(.primary)
-                            .frame(width: 32, height: 32)
-                            .background(
-                                Circle()
-                                    .fill(Color(UIColor.systemGray5))
-                            )
-                    }
-                    .disabled(remainingBalance <= 0)
-                }
-            }
-            .sheet(isPresented: $showAddCategory) {
-                AddBudgetCategorySheet(budgetCategories: $budgetCategories, availableBalance: unbudgetedBalance)
-            }
-            .sheet(item: $editingCategory) { category in
-                EditBudgetCategorySheet(budgetCategories: $budgetCategories, category: category, availableBalance: unbudgetedBalance + category.amount)
-            }
-        }
-    }
-}
-
-struct BudgetCategoryRow: View {
-    let category: BudgetCategory
-    let onEdit: () -> Void
-    let onDelete: () -> Void
-    
-    var body: some View {
-        HStack(spacing: 16) {
-            // Icon
-            ZStack {
-                Circle()
-                    .fill(category.categoryColor.opacity(0.15))
-                    .frame(width: 48, height: 48)
-                
-                Image(systemName: category.icon)
-                    .font(.system(size: 20, weight: .regular))
-                    .foregroundColor(category.categoryColor)
-            }
-            
-            // Info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(category.name)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundColor(.primary)
-                
-                Text("Budget allocation")
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundColor(.secondary)
-            }
-            
-            Spacer()
-            
-            // Amount
-            Text(category.amount.formatAsCurrency())
-                .font(.system(size: 16, weight: .bold, design: .rounded))
-                .foregroundColor(.primary)
-            
-            // Menu
-            Menu {
-                Button(action: onEdit) {
-                    Label("Edit", systemImage: "pencil")
-                }
-                Button(role: .destructive, action: onDelete) {
-                    Label("Delete", systemImage: "trash")
-                }
-            } label: {
-                Image(systemName: "ellipsis.circle")
-                    .font(.system(size: 20))
-                    .foregroundColor(.secondary)
-            }
-        }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(UIColor.secondarySystemGroupedBackground))
-        )
-    }
-}
-
-// MARK: - Add Budget Category Sheet
-
-struct AddBudgetCategorySheet: View {
-    @Environment(\.dismiss) var dismiss
-    @Binding var budgetCategories: [BudgetCategory]
-    let availableBalance: Double
-    @State private var categoryName: String = ""
-    @State private var amount: String = ""
-    @State private var selectedIcon: String = "tag.fill"
-    @State private var selectedColor: String = "blue"
-    @State private var errorMessage: String = ""
-    
-    let availableIcons = ["tag.fill", "cart.fill", "fork.knife", "house.fill", "car.fill", "airplane", "gamecontroller.fill", "book.fill", "gift.fill", "heart.fill"]
-    let availableColors = ["blue", "purple", "green", "orange", "red", "pink", "yellow", "teal"]
-    
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    // Header - Available Balance
-                    VStack(spacing: 6) {
-                        Text("Available to Budget")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.secondary)
-                            .textCase(.uppercase)
-                            .tracking(0.5)
-                        
-                        Text(availableBalance.formatAsCurrency())
-                            .font(.system(size: 36, weight: .bold, design: .rounded))
-                            .foregroundColor(.primary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
-                    .padding(.bottom, 32)
-                    
-                    // Form Section
-                    VStack(spacing: 20) {
-                        // Category Name
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("CATEGORY NAME")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                                .tracking(0.8)
-                            
-                            TextField("e.g., Groceries, Rent, Entertainment", text: $categoryName)
-                                .font(.system(size: 17))
-                                .padding(14)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(Color(UIColor.tertiarySystemGroupedBackground))
-                                )
-                        }
-                        
-                        // Amount
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("AMOUNT")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                                .tracking(0.8)
-                            
-                            HStack(spacing: 8) {
-                                Text("£")
-                                    .font(.system(size: 24, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(.primary)
-                                
-                                TextField("0.00", text: $amount)
-                                    .font(.system(size: 24, weight: .semibold, design: .rounded))
-                                    .keyboardType(.decimalPad)
-                                    .foregroundStyle(.primary)
-                            }
-                            .padding(14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(Color(UIColor.tertiarySystemGroupedBackground))
-                            )
-                        }
-                        
-                        // Icon & Color Combined
-                        VStack(spacing: 16) {
-                            // Icon Picker
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("ICON")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(.secondary)
-                                    .tracking(0.8)
-                                
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 10) {
-                                        ForEach(availableIcons, id: \.self) { icon in
-                                            Circle()
-                                                .fill(selectedIcon == icon ? colorFromString(selectedColor).opacity(0.15) : Color(UIColor.tertiarySystemGroupedBackground))
-                                                .frame(width: 46, height: 46)
-                                                .overlay(
-                                                    Image(systemName: icon)
-                                                        .font(.system(size: 20))
-                                                        .foregroundColor(selectedIcon == icon ? colorFromString(selectedColor) : .secondary)
-                                                )
-                                                .onTapGesture {
-                                                    selectedIcon = icon
-                                                }
-                                        }
-                                    }
-                                    .padding(.vertical, 2)
-                                }
-                            }
-                            
-                            // Color Picker
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("COLOR")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(.secondary)
-                                    .tracking(0.8)
-                                
-                                HStack(spacing: 10) {
-                                    ForEach(availableColors, id: \.self) { colorName in
-                                        Circle()
-                                            .fill(colorFromString(colorName))
-                                            .frame(width: 36, height: 36)
-                                            .overlay(
-                                                Circle()
-                                                    .stroke(Color(UIColor.systemBackground), lineWidth: selectedColor == colorName ? 3 : 0)
-                                            )
-                                            .overlay(
-                                                Circle()
-                                                    .stroke(colorFromString(colorName).opacity(0.3), lineWidth: selectedColor == colorName ? 2 : 0)
-                                                    .padding(selectedColor == colorName ? -2 : 0)
-                                            )
-                                            .onTapGesture {
-                                                selectedColor = colorName
-                                            }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    
-                    // Error Message
-                    if !errorMessage.isEmpty {
-                        HStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .foregroundColor(.red)
-                            Text(errorMessage)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.red)
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 16)
-                    }
-                }
-            }
-            .background(Color(UIColor.systemGroupedBackground))
-            .safeAreaInset(edge: .bottom) {
-                // Add Button
-                Button(action: {
-                    validateAndAddCategory()
-                }) {
-                    Text("Add Budget Category")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(categoryName.isEmpty || amount.isEmpty ? Color.gray : .blue)
-                        )
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(Color(UIColor.systemGroupedBackground))
-                .disabled(categoryName.isEmpty || amount.isEmpty)
-                .opacity(categoryName.isEmpty || amount.isEmpty ? 0.6 : 1.0)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("New Budget")
-                        .font(.system(size: 17, weight: .semibold))
-                }
-                
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .font(.system(size: 17))
-                }
-            }
-        }
-    }
-    
-    private func validateAndAddCategory() {
-        errorMessage = ""
-        
-        // Check if category name is empty
-        if categoryName.isEmpty {
-            errorMessage = "Please enter a category name"
-            return
-        }
-        
-        // Check if amount is empty
-        if amount.isEmpty {
-            errorMessage = "Please enter an amount"
-            return
-        }
-        
-        // Check if amount is a valid number
-        guard let value = Double(amount) else {
-            errorMessage = "Please enter numbers only (e.g., 500 or 500.50)"
-            return
-        }
-        
-        // Check if amount is positive
-        if value <= 0 {
-            errorMessage = "Amount must be greater than zero"
-            return
-        }
-        
-        // Check if amount exceeds available balance
-        if value > availableBalance {
-            errorMessage = "Amount exceeds available balance (\(availableBalance.formatAsCurrency()))"
-            return
-        }
-        
-        // All validations passed - Save to Supabase
-        Task {
-            do {
-                let newCategory = try await SupabaseService.shared.createBudgetCategory(
-                    name: categoryName,
-                    amount: value,
-                    icon: selectedIcon,
-                    color: selectedColor
-                )
-                await MainActor.run {
-                    budgetCategories.append(newCategory)
-                    dismiss()
-                }
-            } catch {
-                await MainActor.run {
-                    errorMessage = "Failed to save: \(error.localizedDescription)"
-                }
-            }
-        }
-    }
-    
-    private func colorFromString(_ colorName: String) -> Color {
-        switch colorName {
-        case "blue": return .blue
-        case "purple": return .purple
-        case "green": return .green
-        case "orange": return .orange
-        case "red": return .red
-        case "pink": return .pink
-        case "yellow": return .yellow
-        case "teal": return .teal
-        default: return .blue
-        }
-    }
-}
-
-// MARK: - Edit Budget Category Sheet
-
-struct EditBudgetCategorySheet: View {
-    @Environment(\.dismiss) var dismiss
-    @Binding var budgetCategories: [BudgetCategory]
-    let category: BudgetCategory
-    let availableBalance: Double
-    @State private var categoryName: String = ""
-    @State private var amount: String = ""
-    @State private var selectedIcon: String = "tag.fill"
-    @State private var selectedColor: String = "blue"
-    @State private var errorMessage: String = ""
-    
-    let availableIcons = ["tag.fill", "cart.fill", "fork.knife", "house.fill", "car.fill", "airplane", "gamecontroller.fill", "book.fill", "gift.fill", "heart.fill"]
-    let availableColors = ["blue", "purple", "green", "orange", "red", "pink", "yellow", "teal"]
-    
-    var body: some View {
-        NavigationStack {
-            ScrollView {
-                VStack(spacing: 0) {
-                    // Header - Available Balance
-                    VStack(spacing: 6) {
-                        Text("Available to Budget")
-                            .font(.system(size: 13, weight: .medium))
-                            .foregroundColor(.secondary)
-                            .textCase(.uppercase)
-                            .tracking(0.5)
-                        
-                        Text(availableBalance.formatAsCurrency())
-                            .font(.system(size: 36, weight: .bold, design: .rounded))
-                            .foregroundColor(.primary)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 24)
-                    .padding(.bottom, 32)
-                    
-                    // Form Section
-                    VStack(spacing: 20) {
-                        // Category Name
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("CATEGORY NAME")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                                .tracking(0.8)
-                            
-                            TextField("e.g., Groceries, Rent, Entertainment", text: $categoryName)
-                                .font(.system(size: 17))
-                                .padding(14)
-                                .background(
-                                    RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                        .fill(Color(UIColor.tertiarySystemGroupedBackground))
-                                )
-                        }
-                        
-                        // Amount
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("AMOUNT")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundStyle(.secondary)
-                                .tracking(0.8)
-                            
-                            HStack(spacing: 8) {
-                                Text("£")
-                                    .font(.system(size: 24, weight: .semibold, design: .rounded))
-                                    .foregroundStyle(.primary)
-                                
-                                TextField("0.00", text: $amount)
-                                    .font(.system(size: 24, weight: .semibold, design: .rounded))
-                                    .keyboardType(.decimalPad)
-                                    .foregroundStyle(.primary)
-                            }
-                            .padding(14)
-                            .background(
-                                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                                    .fill(Color(UIColor.tertiarySystemGroupedBackground))
-                            )
-                        }
-                        
-                        // Icon & Color Combined
-                        VStack(spacing: 16) {
-                            // Icon Picker
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("ICON")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(.secondary)
-                                    .tracking(0.8)
-                                
-                                ScrollView(.horizontal, showsIndicators: false) {
-                                    HStack(spacing: 10) {
-                                        ForEach(availableIcons, id: \.self) { icon in
-                                            Circle()
-                                                .fill(selectedIcon == icon ? colorFromString(selectedColor).opacity(0.15) : Color(UIColor.tertiarySystemGroupedBackground))
-                                                .frame(width: 46, height: 46)
-                                                .overlay(
-                                                    Image(systemName: icon)
-                                                        .font(.system(size: 20))
-                                                        .foregroundColor(selectedIcon == icon ? colorFromString(selectedColor) : .secondary)
-                                                )
-                                                .onTapGesture {
-                                                    selectedIcon = icon
-                                                }
-                                        }
-                                    }
-                                    .padding(.vertical, 2)
-                                }
-                            }
-                            
-                            // Color Picker
-                            VStack(alignment: .leading, spacing: 6) {
-                                Text("COLOR")
-                                    .font(.system(size: 11, weight: .semibold))
-                                    .foregroundStyle(.secondary)
-                                    .tracking(0.8)
-                                
-                                HStack(spacing: 10) {
-                                    ForEach(availableColors, id: \.self) { colorName in
-                                        Circle()
-                                            .fill(colorFromString(colorName))
-                                            .frame(width: 36, height: 36)
-                                            .overlay(
-                                                Circle()
-                                                    .stroke(Color(UIColor.systemBackground), lineWidth: selectedColor == colorName ? 3 : 0)
-                                            )
-                                            .overlay(
-                                                Circle()
-                                                    .stroke(colorFromString(colorName).opacity(0.3), lineWidth: selectedColor == colorName ? 2 : 0)
-                                                    .padding(selectedColor == colorName ? -2 : 0)
-                                            )
-                                            .onTapGesture {
-                                                selectedColor = colorName
-                                            }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    .padding(.horizontal, 20)
-                    
-                    // Error Message
-                    if !errorMessage.isEmpty {
-                        HStack(spacing: 8) {
-                            Image(systemName: "exclamationmark.circle.fill")
-                                .foregroundColor(.red)
-                            Text(errorMessage)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(.red)
-                        }
-                        .padding(.horizontal, 20)
-                        .padding(.top, 16)
-                    }
-                }
-            }
-            .background(Color(UIColor.systemGroupedBackground))
-            .safeAreaInset(edge: .bottom) {
-                // Save Button
-                Button(action: {
-                    validateAndSaveChanges()
-                }) {
-                    Text("Save Changes")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(
-                            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                .fill(categoryName.isEmpty || amount.isEmpty ? Color.gray : .blue)
-                        )
-                }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 12)
-                .background(Color(UIColor.systemGroupedBackground))
-                .disabled(categoryName.isEmpty || amount.isEmpty)
-                .opacity(categoryName.isEmpty || amount.isEmpty ? 0.6 : 1.0)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("Edit Budget")
-                        .font(.system(size: 17, weight: .semibold))
-                }
-                
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .font(.system(size: 17))
-                }
-            }
-            .onAppear {
-                categoryName = category.name
-                amount = String(format: "%.2f", category.amount)
-                selectedIcon = category.icon
-                selectedColor = category.color
-            }
-        }
-    }
-    
-    private func validateAndSaveChanges() {
-        errorMessage = ""
-        
-        // Check if category name is empty
-        if categoryName.isEmpty {
-            errorMessage = "Please enter a category name"
-            return
-        }
-        
-        // Check if amount is empty
-        if amount.isEmpty {
-            errorMessage = "Please enter an amount"
-            return
-        }
-        
-        // Check if amount is a valid number
-        guard let value = Double(amount) else {
-            errorMessage = "Please enter numbers only (e.g., 500 or 500.50)"
-            return
-        }
-        
-        // Check if amount is positive
-        if value <= 0 {
-            errorMessage = "Amount must be greater than zero"
-            return
-        }
-        
-        // Check if amount exceeds available balance
-        if value > availableBalance {
-            errorMessage = "Amount exceeds available balance (\(availableBalance.formatAsCurrency()))"
-            return
-        }
-        
-        // All validations passed - Update in Supabase
-        Task {
-            do {
-                try await SupabaseService.shared.updateBudgetCategory(
-                    id: category.id,
-                    name: categoryName,
-                    amount: value,
-                    icon: selectedIcon,
-                    color: selectedColor
-                )
-                await MainActor.run {
-                    guard let index = budgetCategories.firstIndex(where: { $0.id == category.id }) else { return }
-                    budgetCategories[index].name = categoryName
-                    budgetCategories[index].amount = value
-                    budgetCategories[index].icon = selectedIcon
-                    budgetCategories[index].color = selectedColor
-                    dismiss()
-                }
-            } catch {
-                await MainActor.run {
-                    errorMessage = "Failed to update: \(error.localizedDescription)"
-                }
-            }
-        }
-    }
-    
-    private func colorFromString(_ colorName: String) -> Color {
-        switch colorName {
-        case "blue": return .blue
-        case "purple": return .purple
-        case "green": return .green
-        case "orange": return .orange
-        case "red": return .red
-        case "pink": return .pink
-        case "yellow": return .yellow
-        case "teal": return .teal
-        default: return .blue
-        }
-    }
-}
-
-#Preview {
-    HomeView(
-        incomes: .constant([]),
-        expenses: .constant([]),
-        subscriptions: .constant([])
-    )
-}

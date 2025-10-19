@@ -332,55 +332,6 @@ class SupabaseService {
             .execute()
     }
     
-    // MARK: - BUDGET CATEGORIES OPERATIONS
-    
-    func fetchBudgetCategories() async throws -> [BudgetCategory] {
-        let userId = try await getCurrentUserId()
-        
-        let response: [DatabaseBudgetCategory] = try await client
-            .from("budget_categories")
-            .select()
-            .eq("user_id", value: userId.uuidString)
-            .order("created_at", ascending: false)
-            .execute()
-            .value
-        
-        return response.map { $0.toBudgetCategory() }
-    }
-    
-    func createBudgetCategory(name: String, amount: Double, icon: String, color: String) async throws -> BudgetCategory {
-        let userId = try await getCurrentUserId()
-        
-        let newCategory = DatabaseBudgetCategoryInsert(user_id: userId, name: name, amount: amount, icon: icon, color: color)
-        
-        let response: DatabaseBudgetCategory = try await client
-            .from("budget_categories")
-            .insert(newCategory)
-            .select()
-            .single()
-            .execute()
-            .value
-        
-        return response.toBudgetCategory()
-    }
-    
-    func updateBudgetCategory(id: UUID, name: String, amount: Double, icon: String, color: String) async throws {
-        let update = DatabaseBudgetCategoryUpdate(name: name, amount: amount, icon: icon, color: color)
-        
-        try await client
-            .from("budget_categories")
-            .update(update)
-            .eq("id", value: id.uuidString)
-            .execute()
-    }
-    
-    func deleteBudgetCategory(id: UUID) async throws {
-        try await client
-            .from("budget_categories")
-            .delete()
-            .eq("id", value: id.uuidString)
-            .execute()
-    }
 }
 
 // MARK: - Database Models
@@ -460,33 +411,3 @@ struct DatabaseSubscriptionUpdate: Codable {
     let amount: Double
 }
 
-// Budget Category Models
-struct DatabaseBudgetCategory: Codable {
-    let id: UUID
-    let user_id: UUID
-    let name: String
-    let amount: Double
-    let icon: String
-    let color: String
-    let created_at: Date
-    let updated_at: Date
-    
-    func toBudgetCategory() -> BudgetCategory {
-        BudgetCategory(id: id, name: name, amount: amount, icon: icon, color: color)
-    }
-}
-
-struct DatabaseBudgetCategoryInsert: Codable {
-    let user_id: UUID
-    let name: String
-    let amount: Double
-    let icon: String
-    let color: String
-}
-
-struct DatabaseBudgetCategoryUpdate: Codable {
-    let name: String
-    let amount: Double
-    let icon: String
-    let color: String
-}
