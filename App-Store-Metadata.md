@@ -2,7 +2,7 @@
 
 ## App Information
 - **App Name**: Pocket Balance
-- **Bundle ID**: com.adeosun.PocketBalance
+- **Bundle ID**: [YOUR_BUNDLE_ID]
 - **Category**: Finance
 - **Age Rating**: 4+ (No objectionable content)
 
@@ -94,8 +94,8 @@ Your financial data is secure, private, and always under your control. Start bui
 ### App Review Information
 
 **Demo Account (if needed):**
-- Email: demo@pocketbalance.com
-- Password: DemoUser123!
+- Email: [YOUR_DEMO_EMAIL]
+- Password: [YOUR_DEMO_PASSWORD]
 
 **Review Notes:**
 1. **Authentication**: Use any of the three sign-in methods (Email, Apple ID, or Google)

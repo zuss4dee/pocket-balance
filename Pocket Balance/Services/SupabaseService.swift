@@ -11,8 +11,8 @@ import Supabase
 class SupabaseService {
     static let shared = SupabaseService()
     
-    private let supabaseURL = URL(string: "https://dzxagbbkdzuqmcevqgwh.supabase.co")!
-    private let supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eGFnYmJrZHp1cW1jZXZxZ3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MTM1MjcsImV4cCI6MjA3NTM4OTUyN30.X9lPaChueB7xSTreWiDS9IuuJIUwpagVt7AW1VWkRkg"
+    private let supabaseURL = URL(string: AppConfig.supabaseURL)!
+    private let supabaseKey = AppConfig.supabaseAnonKey
     
     lazy var client: SupabaseClient = {
         SupabaseClient(supabaseURL: supabaseURL, supabaseKey: supabaseKey)
@@ -189,12 +189,10 @@ class SupabaseService {
         // Use direct Admin API approach since Edge Function has syntax issues
         // This uses the service role key to delete the user from auth.users
         
-        let serviceRoleKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eGFnYmJrZHp1cW1jZXZxZ3doIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTgxMzUyNywiZXhwIjoyMDc1Mzg5NTI3fQ.7z8pw0pAte1FtRKRNkWCbyMDwHv9mDWUgieO1KG5MJo"
-        
         // Create admin client with service role key
         let adminClient = SupabaseClient(
             supabaseURL: supabaseURL,
-            supabaseKey: serviceRoleKey
+            supabaseKey: AppConfig.supabaseServiceRoleKey
         )
         
         print("🔄 Attempting to delete user from auth.users: \(userId)")
