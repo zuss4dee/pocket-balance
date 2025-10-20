@@ -198,9 +198,8 @@ class SupabaseService {
         print("🔄 Attempting to delete user from auth.users: \(userId)")
         
         // Delete user from auth.users using admin privileges
-        let result = try await adminClient.auth.admin.deleteUser(id: userId)
+        _ = try await adminClient.auth.admin.deleteUser(id: userId)
         
-        print("✅ User deletion result: \(result)")
         print("✅ User deleted from auth.users")
     }
     
@@ -470,7 +469,7 @@ struct DatabaseCreditCard: Codable {
     let updated_at: Date
     
     func toCreditCard() -> CreditCard {
-        var card = CreditCard(id: id, name: card_name, limit: credit_limit, color: card_color)
+        let card = CreditCard(id: id, name: card_name, limit: credit_limit, color: card_color)
         return card
     }
 }

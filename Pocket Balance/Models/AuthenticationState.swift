@@ -276,7 +276,8 @@ class AuthenticationState: ObservableObject {
         do {
             print("🔍 Starting Google Sign-In...")
             
-            guard let presentingViewController = UIApplication.shared.windows.first?.rootViewController else {
+            guard let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
+                  let presentingViewController = windowScene.windows.first?.rootViewController else {
                 throw NSError(domain: "GoogleSignIn", code: -1, userInfo: [NSLocalizedDescriptionKey: "No presenting view controller"])
             }
             

@@ -375,7 +375,7 @@ struct HomeView: View {
                 }
             } else {
                 // If no name in metadata, try to get first name from phone or email
-                if let phone = user.phone {
+                if user.phone != nil {
                     userFullName = "User"
                 } else if let email = user.email {
                     // Extract first part of email as fallback
