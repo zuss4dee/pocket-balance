@@ -35,5 +35,11 @@
 			<array/>
 		</dict>
 	</array>
+	<key>SUPABASE_URL</key>
+	<string>https://dzxagbbkdzuqmcevqgwh.supabase.co</string>
+	<key>SUPABASE_ANON_KEY</key>
+	<string>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eGFnYmJrZHp1cW1jZXZxZ3doIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTk4MTM1MjcsImV4cCI6MjA3NTM4OTUyN30.X9lPaChueB7xSTreWiDS9IuuJIUwpagVt7AW1VWkRkg</string>
+	<key>SUPABASE_SERVICE_ROLE_KEY</key>
+	<string>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImR6eGFnYmJrZHp1cW1jZXZxZ3doIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1OTgxMzUyNywiZXhwIjoyMDc1Mzg5NTI3fQ.7z8pw0pAte1FtRKRNkWCbyMDwHv9mDWUgieO1KG5MJo</string>
 </dict>
 </plist>
