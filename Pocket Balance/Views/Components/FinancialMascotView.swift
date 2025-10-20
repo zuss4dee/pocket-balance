@@ -15,41 +15,11 @@ struct FinancialMascotView: View {
     }
     
     var body: some View {
-        ZStack {
-            // Main black circle (mascot) - restored original design
-            Circle()
-                .fill(Color.black)
-                .frame(width: size, height: size)
-                .overlay(
-                    // Eyes - original white circles with black pupils
-                    HStack(spacing: size * 0.15) {
-                        // Left eye
-                        ZStack {
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: size * 0.25, height: size * 0.25)
-                            
-                            Circle()
-                                .fill(Color.black)
-                                .frame(width: size * 0.08, height: size * 0.08)
-                                .offset(x: -size * 0.03, y: -size * 0.03)
-                        }
-                        
-                        // Right eye
-                        ZStack {
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: size * 0.25, height: size * 0.25)
-                            
-                            Circle()
-                                .fill(Color.black)
-                                .frame(width: size * 0.08, height: size * 0.08)
-                                .offset(x: -size * 0.03, y: -size * 0.03)
-                        }
-                    }
-                    .offset(y: -size * 0.05)
-                )
-        }
+        // Use the app logo instead of the black circle mascot
+        Image("AppLogo")
+            .resizable()
+            .scaledToFit()
+            .frame(width: size, height: size)
     }
 }
 
