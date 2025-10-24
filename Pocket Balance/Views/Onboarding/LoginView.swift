@@ -43,7 +43,7 @@ struct LoginView: View {
                             handleAppleSignIn(result)
                         }
                     )
-                    .signInWithAppleButtonStyle(.white)
+                    .signInWithAppleButtonStyle(.black)
                     .frame(height: 56)
                     .cornerRadius(28)
                     

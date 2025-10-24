@@ -343,7 +343,7 @@ class AuthenticationState: ObservableObject {
             
             isLoading = false
             isAuthenticated = true
-            currentStep = .completed
+            currentStep = .completed // Skip profile creation for Apple Sign-In
             print("✅ Apple Sign-In successful")
         } catch {
             isLoading = false

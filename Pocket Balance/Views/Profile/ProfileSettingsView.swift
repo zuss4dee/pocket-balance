@@ -27,6 +27,7 @@ struct ProfileSettingsView: View {
     @State private var errorMessage: String?
     @State private var successMessage: String?
     @State private var isProfileIncomplete = false
+    @State private var isAppleSignInUser = false
     
     init(isPresentedAsSheet: Bool = false, onDismiss: (() -> Void)? = nil) {
         self.isPresentedAsSheet = isPresentedAsSheet
@@ -191,12 +192,15 @@ struct ProfileSettingsView: View {
                         // Security
                         SettingsSection(title: "Security") {
                             VStack(spacing: 0) {
-                                SettingsRow(
-                                    icon: "lock.fill",
-                                    title: "Change Password",
-                                    value: "••••••••",
-                                    action: { showChangePassword = true }
-                                )
+                                // Only show password change for email/password users, not Apple Sign-In users
+                                if !isAppleSignInUser {
+                                    SettingsRow(
+                                        icon: "lock.fill",
+                                        title: "Change Password",
+                                        value: "••••••••",
+                                        action: { showChangePassword = true }
+                                    )
+                                }
                             }
                         }
                         
@@ -346,6 +350,9 @@ struct ProfileSettingsView: View {
                     }
                 }
             }
+            
+            // Check if user signed in with Apple (no email/password, but has Apple provider)
+            isAppleSignInUser = userEmail.isEmpty && userPhone.isEmpty && !userFullName.isEmpty
             
             print("✅ Loaded user profile for settings")
             
